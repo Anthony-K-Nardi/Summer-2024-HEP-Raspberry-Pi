@@ -78,6 +78,10 @@ if yn == 'y':
     wantPng = True
     plotName = input("Desired name of plot file (Omit \".png\"): ")
 
+#Condense data to input interval:
+data_read = data_read[mdates.datestr2num(data_read['time']) >= xmin]
+data_read = data_read[mdates.datestr2num(data_read['time']) <= xmax]
+
 for i in range(numSen) :
     dataSourceList.append(data_read[data_read['source'] == colorListB[i]])
     #checkSize = len(dataSourceList[i]['temperature'])
@@ -89,12 +93,11 @@ interval = int(round(timeDiff / TICKS))
 plt.figure(figsize=(10,8))
 plt.xlim(xmin, xmax)
 #plt.ylim(-10, 60)
-plt.ylim(17, 27)
 
 ax = plt.gca()
 for i in range(numSen):
     ax.plot(mdates.datestr2num(dataSourceList[i]['time']), dataSourceList[i]['temperature'], 
-            '.', label=f'{sensColor[i]}', color=f'{colorList[i]}')
+            '-', label=f'{sensColor[i]}', color=f'{colorList[i]}')
 ax.xaxis.set_major_locator(mdates.SecondLocator(interval=interval))
 ax.xaxis.set_major_formatter(mdates.DateFormatter('%H:%M:%S'))
 
