@@ -14,6 +14,9 @@ from pynput import keyboard
 import matplotlib.pyplot as plt
 import matplotlib.dates as mdates
 import numpy as np
+from numpy import fromfile
+from pandas import DataFrame
+import pandas as pd
 import time
 
 #Do we want stuff?
@@ -24,6 +27,7 @@ wantPrint = False #Keep as False but won't break if True
 wantVerify = False #Keep as False but won't break if True
 clearFigure = False #Keep as False but won't break if True
 
+DATE_TODAY = datetime.date.today() #Today's date
 NUM_SENSORS = 7  #MAX SEVEN
 R25 = 10000      #Resistance of thermistor at 25C
 MAXBIT = 32767   #2^15 - 1 (From I2C)
@@ -34,6 +38,7 @@ PAUSE = 0.4         #Limit the program runtime in seconds
 FSVOLT_MAXBIT = FSVOLT / MAXBIT     #EFFICIENCY
 MAXBIT_FSVOLT = MAXBIT / FSVOLT     #EFFICIENCY
 FILE_PATH = "/home/shib/Desktop/"   #Make path to desktop
+
 a = 3.3540154*pow(10, -3)    #DATASHEET [0, 50]
 b = 2.5627725*pow(10, -4)    #DATASHEET [0, 50]
 c = 2.0829210*pow(10, -6)    #DATASHEET [0, 50]
@@ -63,13 +68,12 @@ def TempToI2C(temp, live_voltage):
     return z
 
 def AutoGraph(autoDate):
-    data_type_bin = [('source', 'S6'), ('time', 'S15'), ('temperature', 'f8')]
+    def read_bin(filename, dtype):
+        return DataFrame(fromfile(filename, dtype))
+
     dataSourceList = []
-    colorListB = [b'Black', b'Gray', b'Puplt.close()rple', b'Green', b'Yellow', b'Orange', b'Red']
-    colorList = ['Black', 'Gray', 'Purple', 'Green', 'Yellow', 'Orange', 'Red']
-    sensColor = ['Black/White', 'White/Gray', 'Purple/Gray', 
-                'Green/Yellow', 'Yellow/Orange', 'Orange/Red', 'Red/Brown']
-    title = f'Temperature vs Time ({autoDate})'
+    data_type_bin = [('source', 'S6'), ('time', 'S15'), ('temperature', 'f8')]
+    colorListB = [b'Black', b'Gray', b'Purple', b'Green', b'Yellow', b'Orange', b'Red']
 
     #Load text file and strip header:
     text = np.loadtxt(f"{FILE_PATH}{autoDate}.txt", str)
@@ -77,37 +81,40 @@ def AutoGraph(autoDate):
     numSen = (len(header) - 2) #Number of columns minus date and temp
 
     #Load binary file and read:
-    with open(f"{FILE_PATH}{autoDate}.bin", 'rb') as f:
-        data_read = np.fromfile(f, dtype = data_type_bin)
+    data_read = read_bin(f"{FILE_PATH}{autoDate}.bin", data_type_bin)
+    data_read['time'] = data_read['time'].astype(str)
+    data_read['time'] = pd.to_datetime(data_read['time'], format="%H:%M:%S.%f")
 
     #Set 24hr range and set interval in seconds:
-    xmin = "00:00:00"
-    xmin = mdates.datestr2num(xmin)
-    xmax = "23:59:59"
-    xmax = mdates.datestr2num(xmax)
-    timeDiff = (xmax - xmin) * 86400 #Hours to total seconds
+    xmin = data_read['time'][0]
+    xmax = "23:59:59.999999"
+    xmax = pd.to_datetime(xmax, format="%H:%M:%S.%f")
+    timeDiff = (xmax - xmin).total_seconds() #Hours to total seconds
     interval = int(round(timeDiff / TICKS)) #Evenly space out total seconds for x-axis
+
+    #get rid of unwanted data after midnight
+    filtered_data = data_read[(data_read['time'] >= xmin) & (data_read['time'] <= xmax)]
     
     #Organize data for plotting:
     for i in range(numSen) :
-        dataSourceList.append(data_read[data_read['source'] == colorListB[i]])
+        dataSourceList.append(filtered_data[filtered_data['source'] == colorListB[i]])
 
     #Plot:
     plt.figure(figsize=(10,8))
     plt.xlim(xmin, xmax)
-    plt.ylim(-10, 60)
     ax = plt.gca()
     for i in range(numSen):
-        ax.plot(mdates.datestr2num(dataSourceList[i]['time']), dataSourceList[i]['temperature'], 
-                '.', label=f'{sensColor[i]}', color=f'{colorList[i]}')
+        ax.plot(dataSourceList[i]['time'], dataSourceList[i]['temperature'], 
+                '-', label=f'{sensColor[i]}', color=hexList[i])
     ax.xaxis.set_major_locator(mdates.SecondLocator(interval=interval))
     ax.xaxis.set_major_formatter(mdates.DateFormatter('%H:%M:%S'))
 
     #Plot formatting and save:
+    title = f'Temperature Over Time ({autoDate})'
     plt.gcf().autofmt_xdate()
     plt.xticks(rotation=90)
-    plt.xlabel('Time')
-    plt.ylabel('Temperature in C')
+    plt.xlabel('Time') #x-axis time
+    plt.ylabel('Temperature (Celsius)') #y-axis in celcius
     plt.title(title)
     plt.legend()
     plt.savefig(f'{FILE_PATH}{autoDate}.png')
@@ -191,9 +198,11 @@ redBrn = AnalogIn(ads0, ADS.P3)   #Sensor 7 from I2C48 pin A3
 #MAKE ALL THE LISTS !!!
 X = [[] for _ in range(NUM_SENSORS)]
 Y = [[] for _ in range(NUM_SENSORS)]
-colorList = ['Black', 'Gray', 'Purple', 'Green', 'Yellow', 'Orange', 'Red']
+headerList = ['Black', 'Gray', 'Purple', 'Green', 'Yellow', 'Orange', 'Red']
+sensColor = ['Black/White', 'White/Gray', 'Purple/Gray', 
+                'Green/Yellow', 'Yellow/Orange', 'Orange/Red', 'Red/Brown']
 hexList = ['#18191a', '#808080', '#9529df', '#008751', '#ffec27', '#ffa300', '#ff004d']
-sensorList = [blkWht, gryWht, prpGry, grnYel, orgYel, redOrg, redBrn]
+sensList = [blkWht, gryWht, prpGry, grnYel, orgYel, redOrg, redBrn]
 dataPointList = []
 currentYList = []
 currentXList = []
@@ -202,30 +211,29 @@ rFixList = [6110, 6110, 6110, 6110, 6110, 6110, 6110] #Measured out of circuit
 
 if wantFile :
     #Prepare files for text and binary recording
-    date_today = datetime.date.today()
-    fileBin = open(f"{FILE_PATH}{date_today}.bin", 'ab')
+    fileBin = open(f"{FILE_PATH}{DATE_TODAY}.bin", 'ab')
     #Create header
     header = '    Date        Time         '
     for i in range(NUM_SENSORS):
-        header += f'{colorList[i]}   '
+        header += f'{headerList[i]}   '
     header += '\n'
     #Write header to file
-    with open(f"{FILE_PATH}{date_today}.txt", 'a') as fileText:
+    with open(f"{FILE_PATH}{DATE_TODAY}.txt", 'a') as fileText:
         fileText.write(header)
 
 #Mark start time
 begin = datetime.datetime.now()
 
 #Prepare plot and plot origin:
+title = f'Temperature Over Time ({DATE_TODAY})'
 plt.figure(figsize=(10,9))
 ax = plt.gca()
 ax.xaxis.set_major_formatter(mdates.DateFormatter('%H:%M:%S'))
 plt.xticks(rotation=90)
-plt.ylim(-10, 60) #-10C - 60C
-plt.xlabel('Time(seconds)') #x-axis in seconds
-plt.ylabel('Temperature(celsius)') #y-axis in celcius
-plt.title('Temperature Over Time')
-lines = [plt.plot([], [], label=f"Temp {colorList[i]}", 
+plt.xlabel('Time') #x-axis time
+plt.ylabel('Temperature (Celsius)') #y-axis in celcius
+plt.title(title)
+lines = [plt.plot([], [], '-', label=f'{sensColor[i]}',
                   color=hexList[i])[0] for i in range(NUM_SENSORS)]
 plt.legend()
 plt.show(block=False)
@@ -239,18 +247,18 @@ while True:
         #Condition for midnight
         date_check = datetime.date.today()
 
-        if date_check != date_today:
+        if date_check != DATE_TODAY:
             #Put autograph call here
             fileBin.close()
 
             if wantAuto :
-                AutoGraph(date_today)
-            date_today = date_check
+                AutoGraph(DATE_TODAY)
+            DATE_TODAY = date_check
 
             #Open new text and binary files:
-            with open(f"{FILE_PATH}{date_today}.txt", 'a') as fileText:
+            with open(f"{FILE_PATH}{DATE_TODAY}.txt", 'a') as fileText:
                 fileText.write(header)
-            fileBin = open(f"{FILE_PATH}{date_today}.bin", 'ab')
+            fileBin = open(f"{FILE_PATH}{DATE_TODAY}.bin", 'ab')
     
     for i in range(NUM_SENSORS):
         #Set circuit specific voltage and resistance
@@ -258,15 +266,15 @@ while True:
         rFix = rFixList[i]
 
         #Acquire sensor temperature and verify
-        y = I2CToTemp(sensorList[i].value, live_voltage)
+        y = I2CToTemp(sensList[i].value, live_voltage)
         if wantVerify :
             verify = TempToI2C(y, live_voltage)
-            print(sensorList[i].value, " ", round(verify))
+            print(sensList[i].value, " ", round(verify))
         
         #Get data for binary
         timeNow = datetime.datetime.now().strftime("%H:%M:%S.%f")
         plotTime = datetime.datetime.now()
-        dataPoint = (colorList[i], timeNow, y)
+        dataPoint = (sensColor[i], timeNow, y)
         dataPointList.append(dataPoint)
 
         #Append verified sensor point
@@ -285,7 +293,7 @@ while True:
 
         if check >= begin + datetime.timedelta(seconds = 2):
             begin = check
-            with open(f"{FILE_PATH}{date_today}.txt", 'a') as fileText:
+            with open(f"{FILE_PATH}{DATE_TODAY}.txt", 'a') as fileText:
                 #Create content
                 content = f"{check}   "
                 for i in range(NUM_SENSORS):
@@ -325,12 +333,11 @@ while True:
         ax = plt.gca()
         ax.xaxis.set_major_formatter(mdates.DateFormatter('%H:%M:%S'))
         plt.xticks(rotation=90)
-        plt.ylim(-10, 60) #-10C - 60C
-        plt.xlabel('Time(seconds)') #x-axis in seconds
-        plt.ylabel('Temperature(celsius)') #y-axis in celcius
-        plt.title('Temperature Over Time')
-        lines = [plt.plot([], [], label=f"Temp {colorList[i]}", 
-                        color=hexList[i])[0] for i in range(NUM_SENSORS)]
+        plt.xlabel('Time') #x-axis time
+        plt.ylabel('Temperature (Celsius)') #y-axis in celcius
+        plt.title(title)
+        lines = [plt.plot([], [], '-', label=f'{sensColor[i]}',
+                  color=hexList[i])[0] for i in range(NUM_SENSORS)]
         plt.legend()
         plt.show(block=False)
 
@@ -338,5 +345,5 @@ while True:
     dataPointList = []
     currentYList = []
     currentXList = []
-        
+
     time.sleep(PAUSE)
