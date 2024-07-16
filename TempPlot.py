@@ -30,10 +30,10 @@ colorList = ['Black', 'Gray', 'Purple', 'Green', 'Yellow', 'Orange', 'Red']
 sensColor = ['Black/White', 'White/Gray', 'Purple/Gray', 
              'Green/Yellow', 'Yellow/Orange', 'Orange/Red', 'Red/Brown']
 
-yn = input(f"Do you want to load {DATE_TODAY} data? y/n: ")
-
 while not valid:
     try:
+        yn = input(f"Do you want to load {DATE_TODAY} data? y/n: ")
+        
         if yn == 'y':
             text = np.loadtxt(f"{filePath}{DATE_TODAY}.txt", str)
             title = f'Temperature Over Time ({DATE_TODAY})'
@@ -47,6 +47,7 @@ while not valid:
         valid = True
     except:
         print("ERROR: Text file not open, check file name and put on desktop. Omit \".txt\".")
+
 
 valid = False
 
@@ -108,7 +109,7 @@ plt.xlim(xmin, xmax)
 ax = plt.gca()
 for i in range(numSen):
     ax.plot(dataSourceList[i]['time'], dataSourceList[i]['temperature'], 
-            '-', label=f'{sensColor[i]}', color=f'{colorList[i]}')
+            '.', label=f'{sensColor[i]}', color=f'{colorList[i]}')
 ax.xaxis.set_major_locator(mdates.SecondLocator(interval=interval))
 ax.xaxis.set_major_formatter(mdates.DateFormatter('%H:%M:%S'))
 

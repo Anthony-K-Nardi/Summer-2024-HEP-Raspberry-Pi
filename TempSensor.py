@@ -4,6 +4,7 @@ LAST EDITED: 7/10/2024
 LAST CHANGES: Live Plot Toggle
 '''
 
+from platform import java_ver
 import adafruit_ads1x15.ads1115 as ADS
 from adafruit_ads1x15.analog_in import AnalogIn
 from adafruit_ads1x15.ads1x15 import Mode
@@ -18,6 +19,7 @@ from numpy import fromfile
 from pandas import DataFrame
 import pandas as pd
 import time
+import math
 
 #Do we want stuff?
 wantFile = True
@@ -48,6 +50,8 @@ bb = 4.4307830*pow(10, 3)    #DATASHEET for reverse
 cc = -3.4078983*pow(10, 4)   #DATASHEET for reverse
 dd = -8.8941929*pow(10, 6)   #DATASHEET for reverse
 
+validList = [True, True, True, True, True, True, True]
+
 def I2CToTemp(z, live_voltage):
     vT = z * (FSVOLT_MAXBIT) #Voltage thermistor
     vR = live_voltage - vT #Voltage across resistor
@@ -55,7 +59,6 @@ def I2CToTemp(z, live_voltage):
     rT = vT / I #Resistance thermistor
     #Datasheet method for temp:
     temp = 1 / (a + b*np.log(rT / R25) + c*pow(np.log(rT / R25),2) + d*pow(np.log(rT / R25),3))
-
     return (temp - 273.15) #Temperature in celcius
 
 def TempToI2C(temp, live_voltage):
@@ -118,6 +121,7 @@ def AutoGraph(autoDate):
     plt.title(title)
     plt.legend()
     plt.savefig(f'{FILE_PATH}{autoDate}.png')
+    #plt.close()
 
 def press_g():
     global wantPlot
@@ -230,6 +234,7 @@ plt.figure(figsize=(10,9))
 ax = plt.gca()
 ax.xaxis.set_major_formatter(mdates.DateFormatter('%H:%M:%S'))
 plt.xticks(rotation=90)
+#plt.ylim(-10,60)
 plt.xlabel('Time') #x-axis time
 plt.ylabel('Temperature (Celsius)') #y-axis in celcius
 plt.title(title)
@@ -243,34 +248,46 @@ listener=keyboard.GlobalHotKeys({'<ctrl>+<alt>+g': press_g,'<ctrl>+<alt>+p': pre
 listener.start()
 
 while True:
-    if wantFile :
-        #Condition for midnight
-        date_check = datetime.date.today()
+    #Condition for midnight
+    date_check = datetime.date.today()
 
-        if date_check != DATE_TODAY:
-            #Put autograph call here
+    if date_check != DATE_TODAY:
+        #Update title
+        title = f'Temperature Over Time ({date_check})'
+
+        if wantFile:
+            #Autograph call:
             fileBin.close()
-
-            if wantAuto :
+            if wantAuto:
                 AutoGraph(DATE_TODAY)
+
+            #Update date
             DATE_TODAY = date_check
 
             #Open new text and binary files:
             with open(f"{FILE_PATH}{DATE_TODAY}.txt", 'a') as fileText:
                 fileText.write(header)
             fileBin = open(f"{FILE_PATH}{DATE_TODAY}.bin", 'ab')
+        else:
+            #Update date
+            DATE_TODAY = date_check
     
     for i in range(NUM_SENSORS):
         #Set circuit specific voltage and resistance
-        live_voltage = a0.voltage*2
         rFix = rFixList[i]
 
         #Acquire sensor temperature and verify
-        y = I2CToTemp(sensList[i].value, live_voltage)
-        if wantVerify :
+        validList[i] = True
+    
+        y = I2CToTemp(sensList[i].value, a0.voltage*2)
+        if y > 100 or math.isnan(y):
+            y = 0
+        live_voltage = a0.voltage*2
+        
+        if wantVerify: 
             verify = TempToI2C(y, live_voltage)
             print(sensList[i].value, " ", round(verify))
-        
+
         #Get data for binary
         timeNow = datetime.datetime.now().strftime("%H:%M:%S.%f")
         plotTime = datetime.datetime.now()
@@ -334,6 +351,7 @@ while True:
         ax.xaxis.set_major_formatter(mdates.DateFormatter('%H:%M:%S'))
         plt.xticks(rotation=90)
         plt.xlabel('Time') #x-axis time
+        #plt.ylim(-10,60)
         plt.ylabel('Temperature (Celsius)') #y-axis in celcius
         plt.title(title)
         lines = [plt.plot([], [], '-', label=f'{sensColor[i]}',
