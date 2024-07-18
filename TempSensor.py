@@ -291,7 +291,7 @@ while True:
         #Get data for binary
         timeNow = datetime.datetime.now().strftime("%H:%M:%S.%f")
         plotTime = datetime.datetime.now()
-        dataPoint = (sensColor[i], timeNow, y)
+        dataPoint = (headerList[i], timeNow, y)
         dataPointList.append(dataPoint)
 
         #Append verified sensor point
