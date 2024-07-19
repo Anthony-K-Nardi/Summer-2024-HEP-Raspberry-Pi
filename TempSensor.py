@@ -1,7 +1,7 @@
 '''
 AUTHORED: HUNTER JAYDEN TONY
-LAST EDITED: 7/10/2024
-LAST CHANGES: Live Plot Toggle
+LAST EDITED: 7/19/2024
+LAST CHANGES: Midnight Check Overhaul
 '''
 
 from platform import java_ver
@@ -39,7 +39,7 @@ PLOT_PAUSE = 0.1    #Limit the live plot in additional seconds
 PAUSE = 0.4         #Limit the program runtime in seconds
 FSVOLT_MAXBIT = FSVOLT / MAXBIT     #EFFICIENCY
 MAXBIT_FSVOLT = MAXBIT / FSVOLT     #EFFICIENCY
-FILE_PATH = "/home/shib/Desktop/"   #Make path to desktop
+FILE_PATH = "/home/shib/Desktop/piData/"   #Make path to desktop
 
 a = 3.3540154*pow(10, -3)    #DATASHEET [0, 50]
 b = 2.5627725*pow(10, -4)    #DATASHEET [0, 50]
@@ -49,8 +49,6 @@ aa = -1.4141963*pow(10, 1)   #DATASHEET for reverse
 bb = 4.4307830*pow(10, 3)    #DATASHEET for reverse
 cc = -3.4078983*pow(10, 4)   #DATASHEET for reverse
 dd = -8.8941929*pow(10, 6)   #DATASHEET for reverse
-
-validList = [True, True, True, True, True, True, True]
 
 def I2CToTemp(z, live_voltage):
     vT = z * (FSVOLT_MAXBIT) #Voltage thermistor
@@ -153,6 +151,13 @@ def press_v():
     else:
         wantVerify = True
 
+def check_midnight(date_today):
+    check = datetime.date.today()
+    if check != date_today:
+        return True #Is midnight
+    else:
+        return False #Not midnight
+
 #Prepare I2C and ADS for each sensor:
 i2c = busio.I2C(board.SCL, board.SDA)
 #Sensor 0 at first address
@@ -165,7 +170,7 @@ ads1.mode = Mode.SINGLE
 ads1.data_rate = 860
 
 #Prepare readings for each sensor:
-'''
+
 #Jayden's setup
 a0 = AnalogIn(ads0, ADS.P0)       #Voltage measurement from I2C48 pin A0
 blkWht = AnalogIn(ads0, ADS.P1)   #Sensor 1 from I2C48 pin A1
@@ -175,7 +180,7 @@ grnYel = AnalogIn(ads1, ADS.P0)   #Sensor 4 from I2C49 pin A0
 orgYel = AnalogIn(ads1, ADS.P1)   #Sensor 5 from I2C49 pin A1
 redOrg = AnalogIn(ads1, ADS.P2)   #Sensor 6 from I2C49 pin A2
 redBrn = AnalogIn(ads1, ADS.P3)   #Sensor 7 from I2C49 pin A3
-'''
+
 '''
 #Hunter's setup
 a0 = AnalogIn(ads1, ADS.P3)       #Voltage measurement from I2C49 pin A3
@@ -187,7 +192,7 @@ orgYel = AnalogIn(ads1, ADS.P0)   #Sensor 5 from I2C49 pin A0
 redOrg = AnalogIn(ads1, ADS.P1)   #Sensor 6 from I2C49 pin A1
 redBrn = AnalogIn(ads1, ADS.P2)   #Sensor 7 from I2C49 pin A2
 '''
-
+'''
 #Tony's setup
 a0 = AnalogIn(ads1, ADS.P0)       #Voltage measurement from I2C49 pin A0
 blkWht = AnalogIn(ads1, ADS.P1)   #Sensor 1 from I2C49 pin A1
@@ -197,7 +202,7 @@ grnYel = AnalogIn(ads0, ADS.P0)   #Sensor 4 from I2C48 pin A0
 orgYel = AnalogIn(ads0, ADS.P1)   #Sensor 5 from I2C48 pin A1
 redOrg = AnalogIn(ads0, ADS.P2)   #Sensor 6 from I2C48 pin A2
 redBrn = AnalogIn(ads0, ADS.P3)   #Sensor 7 from I2C48 pin A3
-
+'''
 
 #MAKE ALL THE LISTS !!!
 X = [[] for _ in range(NUM_SENSORS)]
@@ -249,11 +254,10 @@ listener.start()
 
 while True:
     #Condition for midnight
-    date_check = datetime.date.today()
-
-    if date_check != DATE_TODAY:
+    if check_midnight(DATE_TODAY):
         #Update title
-        title = f'Temperature Over Time ({date_check})'
+        new_day = datetime.date.today()
+        title = f'Temperature Over Time ({new_day})'
 
         if wantFile:
             #Autograph call:
@@ -262,7 +266,7 @@ while True:
                 AutoGraph(DATE_TODAY)
 
             #Update date
-            DATE_TODAY = date_check
+            DATE_TODAY = new_day
 
             #Open new text and binary files:
             with open(f"{FILE_PATH}{DATE_TODAY}.txt", 'a') as fileText:
@@ -270,16 +274,15 @@ while True:
             fileBin = open(f"{FILE_PATH}{DATE_TODAY}.bin", 'ab')
         else:
             #Update date
-            DATE_TODAY = date_check
+            DATE_TODAY = new_day
     
     for i in range(NUM_SENSORS):
         #Set circuit specific voltage and resistance
         rFix = rFixList[i]
 
         #Acquire sensor temperature and verify
-        validList[i] = True
-    
         y = I2CToTemp(sensList[i].value, a0.voltage*2)
+        timeNow = datetime.datetime.now()
         if y > 100 or math.isnan(y):
             y = 0
         live_voltage = a0.voltage*2
@@ -289,75 +292,76 @@ while True:
             print(sensList[i].value, " ", round(verify))
 
         #Get data for binary
-        timeNow = datetime.datetime.now().strftime("%H:%M:%S.%f")
-        plotTime = datetime.datetime.now()
-        dataPoint = (headerList[i], timeNow, y)
+        timeNowBin = timeNow.strftime("%H:%M:%S.%f")
+        dataPoint = (headerList[i], timeNowBin, y)
         dataPointList.append(dataPoint)
 
-        #Append verified sensor point
+        #Get data for plot
         currentYList.append(y)
-        currentXList.append(plotTime)
+        currentXList.append(timeNow)
 
-        #Write data to binary
-        if wantFile :
+        #Write data to binary on right day
+        if wantFile and (not check_midnight(DATE_TODAY)):
             data_type = [('source', 'S6'), ('time', 'S15'), ('temperature', 'f8')]
             structuredData = np.array([dataPointList[i]], dtype = data_type)
             structuredData.tofile(fileBin)
 
-    if wantFile:
-        #Write to text file every two seconds
-        check = datetime.datetime.now()
+    #Don't write after midnight!
+    if not check_midnight(DATE_TODAY):
+        if wantFile:
+            #Write to text file every two seconds
+            check = datetime.datetime.now()
 
-        if check >= begin + datetime.timedelta(seconds = 2):
-            begin = check
-            with open(f"{FILE_PATH}{DATE_TODAY}.txt", 'a') as fileText:
-                #Create content
-                content = f"{check}   "
-                for i in range(NUM_SENSORS):
-                    temp = "%.2f" % round(currentYList[i],2)
-                    content += f'{temp}   '
-                content += '\n'
-                #Write content
-                fileText.write(content)
+            if check >= begin+datetime.timedelta(seconds=2):
+                begin = check
+                with open(f"{FILE_PATH}{DATE_TODAY}.txt", 'a') as fileText:
+                    #Create content
+                    content = f"{timeNow}   "
+                    for i in range(NUM_SENSORS):
+                        temp = "%.2f" % round(currentYList[i],2)
+                        content += f'{temp}   '
+                    content += '\n'
+                    #Write content
+                    fileText.write(content)
 
-    if wantPrint:
-        #Create content
-        content = ""
-        for i in range(NUM_SENSORS):
-            temp = "%.2f" % round(currentYList[i],2)
-            content += f'{temp}   '
-        #Write content and reset list
-        print(content)
+        if wantPrint:
+            #Create content
+            content = ""
+            for i in range(NUM_SENSORS):
+                temp = "%.2f" % round(currentYList[i],2)
+                content += f'{temp}   '
+            #Write content and reset list
+            print(content)
 
-    if wantPlot :
-        #Add to X and Y lists
-        for i in range(NUM_SENSORS):
-            X[i].append(currentXList[i])
-            Y[i].append(currentYList[i])
-            lines[i].set_data(X[i], Y[i])
-        #Plot sensor point and pause
-        plt.pause(PLOT_PAUSE)
-        ax.relim()
-        ax.autoscale_view(True, True, True)
+        if wantPlot:
+            #Add to X and Y lists
+            for i in range(NUM_SENSORS):
+                X[i].append(currentXList[i])
+                Y[i].append(currentYList[i])
+                lines[i].set_data(X[i], Y[i])
+            #Plot sensor point and pause
+            plt.pause(PLOT_PAUSE)
+            ax.relim()
+            ax.autoscale_view(True, True, True)
 
-    if clearFigure:
-        #Close and reset:
-        plt.close()
-        clearFigure = False
+        if clearFigure:
+            #Close and reset:
+            plt.close()
+            clearFigure = False
 
-        #Reset formatting:
-        plt.figure(figsize=(10,9))
-        ax = plt.gca()
-        ax.xaxis.set_major_formatter(mdates.DateFormatter('%H:%M:%S'))
-        plt.xticks(rotation=90)
-        plt.xlabel('Time') #x-axis time
-        #plt.ylim(-10,60)
-        plt.ylabel('Temperature (Celsius)') #y-axis in celcius
-        plt.title(title)
-        lines = [plt.plot([], [], '-', label=f'{sensColor[i]}',
-                  color=hexList[i])[0] for i in range(NUM_SENSORS)]
-        plt.legend()
-        plt.show(block=False)
+            #Reset formatting:
+            plt.figure(figsize=(10,9))
+            ax = plt.gca()
+            ax.xaxis.set_major_formatter(mdates.DateFormatter('%H:%M:%S'))
+            plt.xticks(rotation=90)
+            plt.xlabel('Time') #x-axis time
+            #plt.ylim(-10,60)
+            plt.ylabel('Temperature (Celsius)') #y-axis in celcius
+            plt.title(title)
+            lines = [plt.plot([], [], '-', label=f'{sensColor[i]}',
+                    color=hexList[i])[0] for i in range(NUM_SENSORS)]
+            plt.legend()
+            plt.show(block=False)
 
     #Clear lists:
     dataPointList = []

@@ -1,7 +1,7 @@
 '''
 AUTHORED: HUNTER JAYDEN TONY
-LAST EDITED: 7/10/2024
-LAST CHANGES: Live Plot Toggle
+LAST EDITED: 7/19/2024
+LAST CHANGES: Manipulation Features
 '''
 
 import datetime
@@ -30,7 +30,7 @@ TICKS = 15
 valid = False
 stop = False
 plotName = ''
-filePath = "/home/shib/Desktop/"
+filePath = "/home/shib/Desktop/piData/"
 data_type_txt = [('source', 'S6'), ('date', 'S10'), ('time', 'S16'), ('temperature', 'f8')]
 data_type_bin = [('source', 'S6'), ('time', 'S15'), ('temperature', 'f8')]
 dataSourceList = []
@@ -86,7 +86,7 @@ valid = False
 while not valid:
     try:
         #Get start time:
-        xmin = input("Set x-axis start time in \'HH:MM:SS\': ")
+        xmin = input("Set x-axis start time in \'HH:MM:SS.0\': ")
         xmin = pd.to_datetime(xmin, format="%H:%M:%S.%f")
 
         valid = True
@@ -98,7 +98,7 @@ valid = False
 while not valid:
     try:
         #Get stop time:
-        xmax = input("Set x-axis end time in \'HH:MM:SS\': ")
+        xmax = input("Set x-axis end time in \'HH:MM:SS.0\': ")
         xmax = pd.to_datetime(xmax, format="%H:%M:%S.%f")
 
         valid = True
