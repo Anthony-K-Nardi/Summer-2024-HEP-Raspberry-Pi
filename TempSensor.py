@@ -122,6 +122,7 @@ def AutoGraph(autoDate):
     #plt.close()
 
 def press_g():
+    #Live graph hotkey
     global wantPlot
     global clearFigure
     global X
@@ -136,6 +137,7 @@ def press_g():
         wantPlot = True
 
 def press_p():
+    #Print temperatures to terminal hotkey
     global wantPrint
 
     if wantPrint:
@@ -144,6 +146,7 @@ def press_p():
         wantPrint = True
 
 def press_v():
+    #Print integers to terminal hotkey
     global wantVerify
 
     if wantVerify:
@@ -152,17 +155,24 @@ def press_v():
         wantVerify = True
 
 def key_event(key):
+    #If live graph
     if key == 'g':
         press_g()
+
+    #If print temperatures
     elif key == 'p':
         press_p()
+
+    #If print integers
     elif key == 'v':
         press_v()
 
 def start_listening():
+    #Listener function
     listen_keyboard(on_press=key_event)
 
 def check_midnight(date_today):
+    #Is it midnight?
     check = datetime.date.today()
     if check != date_today:
         return True #Is midnight
@@ -259,7 +269,7 @@ lines = [plt.plot([], [], '-', label=f'{sensColor[i]}',
 plt.legend()
 plt.show(block=False)
 
-#Set hotkeys for graph and print:
+#Set listener and start:
 listener_thread = threading.Thread(target=start_listening, daemon=True)
 listener_thread.start()
 
