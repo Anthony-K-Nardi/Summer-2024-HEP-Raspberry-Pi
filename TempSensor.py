@@ -1,17 +1,17 @@
 '''
 AUTHORED: HUNTER JAYDEN TONY
-LAST EDITED: 7/19/2024
-LAST CHANGES: Midnight Check Overhaul
+LAST EDITED: 7/22/2024
+LAST CHANGES: New Hotkey Method
 '''
 
-from platform import java_ver
 import adafruit_ads1x15.ads1115 as ADS
 from adafruit_ads1x15.analog_in import AnalogIn
 from adafruit_ads1x15.ads1x15 import Mode
 import board
 import busio
 import datetime
-from pynput import keyboard
+import threading
+from sshkeyboard import listen_keyboard
 import matplotlib.pyplot as plt
 import matplotlib.dates as mdates
 import numpy as np
@@ -151,6 +151,17 @@ def press_v():
     else:
         wantVerify = True
 
+def key_event(key):
+    if key == 'g':
+        press_g()
+    elif key == 'p':
+        press_p()
+    elif key == 'v':
+        press_v()
+
+def start_listening():
+    listen_keyboard(on_press=key_event)
+
 def check_midnight(date_today):
     check = datetime.date.today()
     if check != date_today:
@@ -208,7 +219,7 @@ redBrn = AnalogIn(ads0, ADS.P3)   #Sensor 7 from I2C48 pin A3
 X = [[] for _ in range(NUM_SENSORS)]
 Y = [[] for _ in range(NUM_SENSORS)]
 headerList = ['Black', 'Gray', 'Purple', 'Green', 'Yellow', 'Orange', 'Red']
-sensColor = ['Black/White', 'White/Gray', 'Purple/Gray', 
+sensColor = ['Black/White', 'Gray/White', 'Purple/Gray', 
                 'Green/Yellow', 'Yellow/Orange', 'Orange/Red', 'Red/Brown']
 hexList = ['#18191a', '#808080', '#9529df', '#008751', '#ffec27', '#ffa300', '#ff004d']
 sensList = [blkWht, gryWht, prpGry, grnYel, orgYel, redOrg, redBrn]
@@ -249,8 +260,8 @@ plt.legend()
 plt.show(block=False)
 
 #Set hotkeys for graph and print:
-listener=keyboard.GlobalHotKeys({'<ctrl>+<alt>+g': press_g,'<ctrl>+<alt>+p': press_p, '<ctrl>+<alt>+v': press_v})
-listener.start()
+listener_thread = threading.Thread(target=start_listening, daemon=True)
+listener_thread.start()
 
 while True:
     #Condition for midnight

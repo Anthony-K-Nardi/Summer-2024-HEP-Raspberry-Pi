@@ -1,7 +1,7 @@
 '''
 AUTHORED: HUNTER JAYDEN TONY
-LAST EDITED: 7/19/2024
-LAST CHANGES: Manipulation Features
+LAST EDITED: 7/22/2024
+LAST CHANGES: Gray/White
 '''
 
 import datetime
@@ -36,7 +36,7 @@ data_type_bin = [('source', 'S6'), ('time', 'S15'), ('temperature', 'f8')]
 dataSourceList = []
 colorListB = [b'Black', b'Gray', b'Purple', b'Green', b'Yellow', b'Orange', b'Red']
 colorList = ['Black', 'Gray', 'Purple', 'Green', 'Yellow', 'Orange', 'Red']
-sensColor = ['Black/White', 'White/Gray', 'Purple/Gray', 
+sensColor = ['Black/White', 'Gray/White', 'Purple/Gray', 
              'Green/Yellow', 'Yellow/Orange', 'Orange/Red', 'Red/Brown']
 
 ##Text file##
