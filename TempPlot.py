@@ -1,7 +1,7 @@
 '''
 AUTHORED: HUNTER JAYDEN TONY
-LAST EDITED: 7/22/2024
-LAST CHANGES: Gray/White
+LAST EDITED: 7/23/2024
+LAST CHANGES: Auto-Scaler
 '''
 
 import datetime
@@ -81,9 +81,15 @@ while not valid:
     except:
         print("ERROR: Binary file not open, check file name and put on desktop. Omit \".bin\".")
 
+##Auto-Scaler##
+autoScale = False
+yn = input("Would you like to use all of the data? y/n: ")
+if yn == "y":
+    autoScale = True
+
 ##Start time##
 valid = False
-while not valid:
+while not valid and not autoScale:
     try:
         #Get start time:
         xmin = input("Set x-axis start time in \'HH:MM:SS.0\': ")
@@ -95,7 +101,7 @@ while not valid:
 
 ##Stop time##
 valid = False
-while not valid:
+while not valid and not autoScale:
     try:
         #Get stop time:
         xmax = input("Set x-axis end time in \'HH:MM:SS.0\': ")
@@ -109,6 +115,9 @@ while not valid:
 #Condense data to input interval:
 data_read['time'] = data_read['time'].astype(str)
 data_read['time'] = pd.to_datetime(data_read['time'], format="%H:%M:%S.%f")
+if autoScale:
+    xmin = data_read['time'][0]
+    xmax = data_read['time'][len(data_read['time'])-1]
 filtered_data = data_read[(data_read['time'] >= xmin) & (data_read['time'] <= xmax)]
 
 #Collect data to list:
