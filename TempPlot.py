@@ -62,7 +62,7 @@ while not valid:
         linesList = [None]*numSen
         valid = True
     except:
-        print("ERROR: Text file not open, check file name and put on desktop. Omit \".txt\".")
+        print("ERROR: Text file not open, check file name and put in piData folder. Omit \".txt\".")
 
 ##Binary file##
 valid = False
@@ -79,7 +79,7 @@ while not valid:
 
         valid = True
     except:
-        print("ERROR: Binary file not open, check file name and put on desktop. Omit \".bin\".")
+        print("ERROR: Binary file not open, check file name and put in piData folder. Omit \".bin\".")
 
 ##Auto-Scaler##
 autoScale = False
