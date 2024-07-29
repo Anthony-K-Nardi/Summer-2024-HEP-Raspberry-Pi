@@ -23,7 +23,7 @@ import math
 
 #Do we want stuff?
 wantFile = True
-wantAuto = True #!!! ONLY ACCESSIBLE IF wantFile == True !!!#
+wantAuto = False #!!! ONLY ACCESSIBLE IF wantFile == True !!!#
 wantPlot = False #Keep as False but won't break if True
 wantPrint = False #Keep as False but won't break if True
 wantVerify = False #Keep as False but won't break if True
@@ -73,8 +73,9 @@ def AutoGraph(autoDate):
         return DataFrame(fromfile(filename, dtype))
 
     dataSourceList = []
-    data_type_bin = [('source', 'S6'), ('time', 'S15'), ('temperature', 'f8')]
-    colorListB = [b'Black', b'Gray', b'Purple', b'Green', b'Yellow', b'Orange', b'Red']
+    data_type_bin = [('source', 'S6'), ('time', 'S15'), ('temperature', 'f8'), ('color', 'S8')]
+    sensName = ['pi02-1', 'pi02-2', 'pi02-3', 'pi02-4', 'pi02-5', 'pi02-6', 'pi02-7']
+    colorListB = [b'Black', b'Gray', b'Purple', b'Green', b'Yellow', b'Orange', b'Red'] #???
 
     #Load text file and strip header:
     text = np.loadtxt(f"{FILE_PATH}{autoDate}.txt", str)
@@ -106,12 +107,12 @@ def AutoGraph(autoDate):
     ax = plt.gca()
     for i in range(numSen):
         ax.plot(dataSourceList[i]['time'], dataSourceList[i]['temperature'], 
-                '-', label=f'{sensColor[i]}', color=hexList[i])
+                '-', label=f'{sensName[i]}', color=colorListH[i])
     ax.xaxis.set_major_locator(mdates.SecondLocator(interval=interval))
     ax.xaxis.set_major_formatter(mdates.DateFormatter('%H:%M:%S'))
 
     #Plot formatting and save:
-    title = f'Temperature Over Time ({autoDate})'
+    title = f'Temperature Over Time ({autoDate}{pi})'
     plt.gcf().autofmt_xdate()
     plt.xticks(rotation=90)
     plt.xlabel('Time') #x-axis time
@@ -191,48 +192,62 @@ ads1.mode = Mode.SINGLE
 ads1.data_rate = 860
 
 #Prepare readings for each sensor:
-
+'''
 #Jayden's setup
-a0 = AnalogIn(ads0, ADS.P0)       #Voltage measurement from I2C48 pin A0
-blkWht = AnalogIn(ads0, ADS.P1)   #Sensor 1 from I2C48 pin A1
-gryWht = AnalogIn(ads0, ADS.P2)   #Sensor 2 from I2C48 pin A2
-prpGry = AnalogIn(ads0, ADS.P3)   #Sensor 3 from I2C48 pin A3
-grnYel = AnalogIn(ads1, ADS.P0)   #Sensor 4 from I2C49 pin A0
-orgYel = AnalogIn(ads1, ADS.P1)   #Sensor 5 from I2C49 pin A1
-redOrg = AnalogIn(ads1, ADS.P2)   #Sensor 6 from I2C49 pin A2
-redBrn = AnalogIn(ads1, ADS.P3)   #Sensor 7 from I2C49 pin A3
-
+pi = 'pi03'                      #pi name
+a0 = AnalogIn(ads0, ADS.P0)      #Voltage measurement from I2C48 pin A0
+sens0 = AnalogIn(ads0, ADS.P1)   #Sensor 1 from I2C48 pin A1
+sens1 = AnalogIn(ads0, ADS.P2)   #Sensor 2 from I2C48 pin A2
+sens2 = AnalogIn(ads0, ADS.P3)   #Sensor 3 from I2C48 pin A3
+sens3 = AnalogIn(ads1, ADS.P0)   #Sensor 4 from I2C49 pin A0
+sens4 = AnalogIn(ads1, ADS.P1)   #Sensor 5 from I2C49 pin A1
+sens5 = AnalogIn(ads1, ADS.P2)   #Sensor 6 from I2C49 pin A2
+sens6 = AnalogIn(ads1, ADS.P3)   #Sensor 7 from I2C49 pin A3
+sensName = ['pi03-1', 'pi03-2', 'pi03-3', 'pi03-4', 'pi03-5', 'pi03-6', 'pi03-7'] #Sensor names for pi03
+colorListH=['#6b7c85', '#0165fc', '#bf77f6', '#01ff07', 
+           '#fffd01', '#ff5b00', '#e50000'] #Plot colors for pi03 hex
+#colorList=['xkcd:battleship grey', 'xkcd:bright blue', 'xkcd:light purple', 'xkcd:bright green', 
+#           'xkcd:bright yellow', 'xkcd:bright orange', 'xkcd:red'] #Plot colors for pi03
+'''
 '''
 #Hunter's setup
-a0 = AnalogIn(ads1, ADS.P3)       #Voltage measurement from I2C49 pin A3
-blkWht = AnalogIn(ads0, ADS.P0)   #Sensor 1 from I2C48 pin A0
-gryWht = AnalogIn(ads0, ADS.P1)   #Sensor 2 from I2C48 pin A1
-prpGry = AnalogIn(ads0, ADS.P2)   #Sensor 3 from I2C48 pin A2
-grnYel = AnalogIn(ads0, ADS.P3)   #Sensor 4 from I2C48 pin A3
-orgYel = AnalogIn(ads1, ADS.P0)   #Sensor 5 from I2C49 pin A0
-redOrg = AnalogIn(ads1, ADS.P1)   #Sensor 6 from I2C49 pin A1
-redBrn = AnalogIn(ads1, ADS.P2)   #Sensor 7 from I2C49 pin A2
+pi = 'pi04'                      #pi name
+a0 = AnalogIn(ads1, ADS.P3)      #Voltage measurement from I2C49 pin A3
+sens0 = AnalogIn(ads0, ADS.P0)   #Sensor 1 from I2C48 pin A0
+sens1 = AnalogIn(ads0, ADS.P1)   #Sensor 2 from I2C48 pin A1
+sens2 = AnalogIn(ads0, ADS.P2)   #Sensor 3 from I2C48 pin A2
+sens2 = AnalogIn(ads1, ADS.P3)   #Sensor 3 from I2C49 pin A3
+sens3 = AnalogIn(ads0, ADS.P3)   #Sensor 4 from I2C48 pin A3
+sens4 = AnalogIn(ads1, ADS.P0)   #Sensor 5 from I2C49 pin A0
+sens5 = AnalogIn(ads1, ADS.P1)   #Sensor 6 from I2C49 pin A1
+sens6 = AnalogIn(ads1, ADS.P2)   #Sensor 7 from I2C49 pin A2
+sensName = ['pi04-1', 'pi04-2', 'pi04-3', 'pi04-4', 'pi04-5', 'pi04-6', 'pi04-7'] #Sensor names for pi04
+colorListH=['#000000', '#047495', '#7e1e9c', '#15b01a', 
+           '#f4d054', '#c65102', '#980002'] #Plot colors for pi04 hex
+#colorList=['xkcd:black', 'xkcd:sea blue', 'xkcd:purple', 'xkcd:green', 
+#           'xkcd:maize', 'xkcd:dark orange', 'xkcd:blood red'] #Plot colors for pi04
 '''
-'''
+
 #Tony's setup
-a0 = AnalogIn(ads1, ADS.P0)       #Voltage measurement from I2C49 pin A0
-blkWht = AnalogIn(ads1, ADS.P1)   #Sensor 1 from I2C49 pin A1
-gryWht = AnalogIn(ads1, ADS.P2)   #Sensor 2 from I2C49 pin A2
-prpGry = AnalogIn(ads1, ADS.P3)   #Sensor 3 from I2C49 pin A3
-grnYel = AnalogIn(ads0, ADS.P0)   #Sensor 4 from I2C48 pin A0
-orgYel = AnalogIn(ads0, ADS.P1)   #Sensor 5 from I2C48 pin A1
-redOrg = AnalogIn(ads0, ADS.P2)   #Sensor 6 from I2C48 pin A2
-redBrn = AnalogIn(ads0, ADS.P3)   #Sensor 7 from I2C48 pin A3
-'''
+pi = 'pi02'                      #pi name
+a0 = AnalogIn(ads1, ADS.P0)      #Voltage measurement from I2C49 pin A0
+sens0 = AnalogIn(ads1, ADS.P1)   #Sensor 1 from I2C49 pin A1
+sens1 = AnalogIn(ads1, ADS.P2)   #Sensor 2 from I2C49 pin A2
+sens2 = AnalogIn(ads1, ADS.P3)   #Sensor 3 from I2C49 pin A3
+sens3 = AnalogIn(ads0, ADS.P0)   #Sensor 4 from I2C48 pin A0
+sens4 = AnalogIn(ads0, ADS.P1)   #Sensor 5 from I2C48 pin A1
+sens5 = AnalogIn(ads0, ADS.P2)   #Sensor 6 from I2C48 pin A2
+sens6 = AnalogIn(ads0, ADS.P3)   #Sensor 7 from I2C48 pin A3
+sensName = ['pi02-1', 'pi02-2', 'pi02-3', 'pi02-4', 'pi02-5', 'pi02-6', 'pi02-7'] #Sensor names for pi02
+colorListH=['#d8dcd6', '#75bbfd', '#eecffe', '#c7fdb5', 
+           '#fbeeac', '#ffb07c', '#fe019a'] #Plot colors for pi02 hex
+#colorList=['xkcd:light gray', 'xkcd:sky blue', 'xkcd:pale lavender', 'xkcd:pale green', 
+#           'xkcd:light tan', 'xkcd:peach', 'xkcd:neon pink'] #Plot colors for pi02
 
 #MAKE ALL THE LISTS !!!
 X = [[] for _ in range(NUM_SENSORS)]
 Y = [[] for _ in range(NUM_SENSORS)]
-headerList = ['Black', 'Gray', 'Purple', 'Green', 'Yellow', 'Orange', 'Red']
-sensColor = ['Black/White', 'Gray/White', 'Purple/Gray', 
-                'Green/Yellow', 'Yellow/Orange', 'Orange/Red', 'Red/Brown']
-hexList = ['#18191a', '#808080', '#9529df', '#008751', '#ffec27', '#ffa300', '#ff004d']
-sensList = [blkWht, gryWht, prpGry, grnYel, orgYel, redOrg, redBrn]
+sensList = [sens0, sens1, sens2, sens3, sens4, sens5, sens6]
 dataPointList = []
 currentYList = []
 currentXList = []
@@ -241,31 +256,31 @@ rFixList = [6110, 6110, 6110, 6110, 6110, 6110, 6110] #Measured out of circuit
 
 if wantFile :
     #Prepare files for text and binary recording
-    fileBin = open(f"{FILE_PATH}{DATE_TODAY}.bin", 'ab')
+    fileBin = open(f"{FILE_PATH}{DATE_TODAY}{pi}.bin", 'ab')
     #Create header
     header = '    Date        Time         '
     for i in range(NUM_SENSORS):
-        header += f'{headerList[i]}   '
+        header += f'{sensName[i]}  '
     header += '\n'
     #Write header to file
-    with open(f"{FILE_PATH}{DATE_TODAY}.txt", 'a') as fileText:
+    with open(f"{FILE_PATH}{DATE_TODAY}{pi}.txt", 'a') as fileText:
         fileText.write(header)
+        fileText.flush()
 
 #Mark start time
 begin = datetime.datetime.now()
 
 #Prepare plot and plot origin:
-title = f'Temperature Over Time ({DATE_TODAY})'
+title = f'Temperature Over Time ({DATE_TODAY}{pi})'
 plt.figure(figsize=(10,9))
 ax = plt.gca()
 ax.xaxis.set_major_formatter(mdates.DateFormatter('%H:%M:%S'))
 plt.xticks(rotation=90)
-#plt.ylim(-10,60)
 plt.xlabel('Time') #x-axis time
 plt.ylabel('Temperature (Celsius)') #y-axis in celcius
 plt.title(title)
-lines = [plt.plot([], [], '-', label=f'{sensColor[i]}',
-                  color=hexList[i])[0] for i in range(NUM_SENSORS)]
+lines = [plt.plot([], [], '-', label=f'{sensName[i]}',
+                  color=colorListH[i])[0] for i in range(NUM_SENSORS)]
 plt.legend()
 plt.show(block=False)
 
@@ -278,7 +293,7 @@ while True:
     if check_midnight(DATE_TODAY):
         #Update title
         new_day = datetime.date.today()
-        title = f'Temperature Over Time ({new_day})'
+        title = f'Temperature Over Time ({new_day}{pi})'
 
         if wantFile:
             #Autograph call:
@@ -290,20 +305,27 @@ while True:
             DATE_TODAY = new_day
 
             #Open new text and binary files:
-            with open(f"{FILE_PATH}{DATE_TODAY}.txt", 'a') as fileText:
+            with open(f"{FILE_PATH}{DATE_TODAY}{pi}.txt", 'a') as fileText:
                 fileText.write(header)
-            fileBin = open(f"{FILE_PATH}{DATE_TODAY}.bin", 'ab')
+                fileText.flush()
+            fileBin = open(f"{FILE_PATH}{DATE_TODAY}{pi}.bin", 'ab')
         else:
             #Update date
             DATE_TODAY = new_day
+    fileBin.flush()
     
     for i in range(NUM_SENSORS):
         #Set circuit specific voltage and resistance
         rFix = rFixList[i]
 
         #Acquire sensor temperature and verify
-        y = I2CToTemp(sensList[i].value, a0.voltage*2)
-        timeNow = datetime.datetime.now()
+        try:
+            timeNow = datetime.datetime.now()
+            y = I2CToTemp(sensList[i].value, a0.voltage*2)
+        except Exception as e:
+            y=0
+            print(e, timeNow)
+        
         if y > 100 or math.isnan(y):
             y = 0
         live_voltage = a0.voltage*2
@@ -313,8 +335,8 @@ while True:
             print(sensList[i].value, " ", round(verify))
 
         #Get data for binary
-        timeNowBin = timeNow.strftime("%H:%M:%S.%f")
-        dataPoint = (headerList[i], timeNowBin, y)
+        #timeNowBin = timeNow.strftime("%H:%M:%S.%f")
+        dataPoint = (sensName[i], timeNow, y, colorListH[i])
         dataPointList.append(dataPoint)
 
         #Get data for plot
@@ -323,9 +345,11 @@ while True:
 
         #Write data to binary on right day
         if wantFile and (not check_midnight(DATE_TODAY)):
-            data_type = [('source', 'S6'), ('time', 'S15'), ('temperature', 'f8')]
-            structuredData = np.array([dataPointList[i]], dtype = data_type)
+            data_type_bin = [('source', 'S6'), ('datetime', 'S26'),
+                             ('temperature', 'f8'), ('color', 'S8')]
+            structuredData = np.array([dataPointList[i]], dtype = data_type_bin)
             structuredData.tofile(fileBin)
+            
 
     #Don't write after midnight!
     if not check_midnight(DATE_TODAY):
@@ -335,7 +359,7 @@ while True:
 
             if check >= begin+datetime.timedelta(seconds=2):
                 begin = check
-                with open(f"{FILE_PATH}{DATE_TODAY}.txt", 'a') as fileText:
+                with open(f"{FILE_PATH}{DATE_TODAY}{pi}.txt", 'a') as fileText:
                     #Create content
                     content = f"{timeNow}   "
                     for i in range(NUM_SENSORS):
@@ -344,6 +368,7 @@ while True:
                     content += '\n'
                     #Write content
                     fileText.write(content)
+                    fileText.flush()
 
         if wantPrint:
             #Create content
@@ -376,11 +401,10 @@ while True:
             ax.xaxis.set_major_formatter(mdates.DateFormatter('%H:%M:%S'))
             plt.xticks(rotation=90)
             plt.xlabel('Time') #x-axis time
-            #plt.ylim(-10,60)
             plt.ylabel('Temperature (Celsius)') #y-axis in celcius
             plt.title(title)
-            lines = [plt.plot([], [], '-', label=f'{sensColor[i]}',
-                    color=hexList[i])[0] for i in range(NUM_SENSORS)]
+            lines = [plt.plot([], [], '-', label=f'{sensName[i]}',
+                    color=colorListH[i])[0] for i in range(NUM_SENSORS)]
             plt.legend()
             plt.show(block=False)
 
