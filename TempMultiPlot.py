@@ -1,7 +1,7 @@
 '''
 AUTHORED: HUNTER JAYDEN TONY
-LAST EDITED: 7/26/2024
-LAST CHANGES: MULTIPLOT
+LAST EDITED: 7/30/2024
+LAST CHANGES: Legend size and location edits
 '''
 
 import datetime
@@ -57,6 +57,7 @@ TICKS = 15
 multiDay = False
 valid = False
 stop = False
+done = False
 plotName = ''
 filePath = "/home/shib/Desktop/piData/"
 data_type_bin = [('source', 'S6'), ('datetime', 'S26'), ('temperature', 'f8'), ('color', 'S8')]
@@ -64,56 +65,45 @@ dataSourceList = []
 fileList=[]
 sensName=[]
 colorList=[]
-
-##Binary file##
-valid = False
-while not valid:
-    try:
-        numFile = input('Enter number of files: ')
-        numFile = int(numFile)
-        if numFile > 0:
-            valid = True
-        else:
-            print("Please enter a non-zero positive integer.")
-    except Exception as e:
-        print(e)
-        print("Please enter a non-zero positive integer.")
+fileCount = 0
 
 #Collect data from all files
-for i in range(numFile):  
+while not done:
     valid = False
-              
     while not valid:
         try:
-            fileRepeat = False
-            #Start file   
-            file = input(f"Enter binary file name {i + 1} (Omit \".bin\".): ")
+            #Start file
+            fileRepeat = False 
+            file = input(f"Enter binary file name {fileCount + 1} (Omit \".bin\".) or 'DONE': ")
 
-            #check for repeated file name
+            #Check for repeated file name
             if file in fileList:
-                fileRepeat=True
+                fileRepeat = True
                 print("File name is same as previously entered, no repeats allowed!")
+            #Exit all while loops
+            elif file == 'DONE' and fileCount != 0:
+                fileRepeat = True
+                valid = True
+                done = True
 
             while not fileRepeat:
-                fileList.append(file)
                 data_read = read_bin(f"{filePath}{file}.bin", data_type_bin)
+                fileList.append(file)
 
                 #Collect first file data
-                if i == 0:
+                if fileCount == 0:
                     #Convert data_read to proper format
                     data_read['source'] = data_read['source'].astype(str)
                     data_read['color'] = data_read['color'].astype(str)
                     data_read['datetime'] = data_read['datetime'].astype(str)
-                    data_read['datetime'] = pd.to_datetime(data_read['datetime'], format="%Y-%m-%d %H:%M:%S.%f")
-                    
+                    data_read['datetime'] = pd.to_datetime(data_read['datetime'], format='ISO8601')
+
                     #Get sensor names and colors
                     sensName = find_sensors(data_read)
                     colorList = find_colors(data_read)
 
-
                     #Collect everything
                     data = data_read
-                    
 
                 #Collect subsequent file data
                 else:
@@ -121,15 +111,7 @@ for i in range(numFile):
                     data_read['source'] = data_read['source'].astype(str)
                     data_read['color'] = data_read['color'].astype(str)
                     data_read['datetime'] = data_read['datetime'].astype(str)
-                    count=0
-                    #bandaid
-                    for x in data_read['datetime']:
-                        if x == '2024-07-28 08:54:21':
-                            data_read['datetime'][count]='2024-07-28 08:54:21.0'
-                            break
-                        count += 1
-                
-                    data_read['datetime'] = pd.to_datetime(data_read['datetime'], format="%Y-%m-%d %H:%M:%S.%f")
+                    data_read['datetime'] = pd.to_datetime(data_read['datetime'], format="ISO8601")
                     
                     #Get sensor names and colors
                     sensName += find_sensors(data_read)
@@ -137,6 +119,9 @@ for i in range(numFile):
 
                     #Collect everything
                     data = pd.concat([data, data_read], ignore_index=True)
+                
+                #Reset for new file
+                fileCount += 1
                 fileRepeat = True
                 valid = True
         except Exception as e:
@@ -145,11 +130,10 @@ for i in range(numFile):
 
 #Define needed variables from gathered data
 data = data.sort_values(by=['datetime'])
-#Get min and max datetime
 dateTimeMin = data['datetime'][0]
 dateTimeMax = data['datetime'][len(data['datetime']) - 1]
 date = dateTimeMin.strftime("%Y-%m-%d")
-title = f'Temperature Over Time {date}'
+title = f'Temperature Over Time ({date})'
 numSen = len(sensName)
 linesList = [None]*numSen
 
@@ -172,10 +156,10 @@ while not valid and not autoScale:
         if dateTimeMin.strftime("%Y-%m-%d") == dateTimeMax.strftime("%Y-%m-%d"):
             #Get start time
             xmin = input("Set x-axis start time in \'HH:MM:SS.0\': ")
-            xmin = pd.to_datetime(date + xmin, format="%Y-%m-%d %H:%M:%S.%f")
+            xmin = pd.to_datetime(date + ' ' + xmin, format="%Y-%m-%d %H:%M:%S.%f")
         else:
             #Get stop time
-            xmin = input("Set x-axis end time in \'YYYY-mm-dd HH:MM:SS.0\': ")
+            xmin = input("Set x-axis start time in \'YYYY-mm-dd HH:MM:SS.0\': ")
             xmin = pd.to_datetime(xmin, format="%Y-%m-%d %H:%M:%S.%f")
             multiDay = True
 
@@ -192,7 +176,7 @@ while not valid and not autoScale:
         if not multiDay:
             #Get stop time
             xmax = input("Set x-axis end time in \'HH:MM:SS.0\': ")
-            xmax = pd.to_datetime(date + xmax, format="%Y-%m-%d %H:%M:%S.%f")
+            xmax = pd.to_datetime(date + ' ' + xmax, format="%Y-%m-%d %H:%M:%S.%f")
         else:
             #Get stop time
             xmax = input("Set x-axis end time in \'YYYY-mm-dd HH:MM:SS.0\': ")
@@ -220,20 +204,22 @@ for i in range(numSen):
     dataSourceList.append(filtered_data[filtered_data['source'] == sensName[i]])
 
 #Calculate interval of x-axis for TICKS steps
-timeDiff = (xmax - xmin).total_seconds()
-interval = int(round(timeDiff / TICKS))
+timeDiff = (xmax - xmin).total_seconds() #Hours to total seconds
+interval = int(round(timeDiff / TICKS)) #Evenly space out total seconds for x-axis
+if interval < 1:
+    interval = 1 #Ensure interval is never zero
 
 ##Plotting##
 #Set plot parameters
-plt.figure(figsize=(10,8))
+plt.figure(figsize=(16,8))
 plt.xlim(xmin, xmax)
 ax = plt.gca()
 
 #Set line object and append to line list
 for i in range(numSen):
     line, = ax.plot(dataSourceList[i]['datetime'], dataSourceList[i]['temperature'],
-            linestyle='solid', linewidth=1,
-            label=f'{sensName[i]}', color=f'{colorList[i]}')
+                    linestyle='solid', linewidth=1,
+                    label=f'{sensName[i]}', color=f'{colorList[i]}')
     linesList[i] = line
 
 #Set x-axis
@@ -246,8 +232,9 @@ plt.xticks(rotation=90)
 plt.xlabel('Time') #x-axis time
 plt.ylabel('Temperature (Celsius)') #y-axis in celcius
 plt.title(title)
-legend = plt.legend()
-legend.set_zorder(numSen + 1)
+leg = plt.legend(bbox_to_anchor=(1.01, 1), borderaxespad=0)
+for line in leg.get_lines():
+    line.set_linewidth(8.0)
 plt.show(block=False)
 
 ##Warning##
@@ -263,7 +250,7 @@ while not stop:
         ##Manipulate##
         if check == 'm':
             print("Input draw order (back to front)")
-            print(f"Valid inputs: {sensName[:numSen]} or \'Done\'")
+            print(f"Valid inputs: {sensName[:numSen]} or \'DONE\'")
             clear_data(ax)
             usedNames = []
 
@@ -283,13 +270,13 @@ while not stop:
                             if name == sensName[j]:
                                 #Set line object
                                 linesList[j], = ax.plot(dataSourceList[j]['datetime'], dataSourceList[j]['temperature'],
-                                                            linestyle='solid', linewidth=1,
-                                                            label=f'{sensName[j]}', color=f'{colorList[j]}')
+                                                        linestyle='solid', linewidth=1,
+                                                        label=f'{sensName[j]}', color=f'{colorList[j]}')
                                 #Append found name to mark as used
                                 usedNames.append(name)
                                 valid = True
                             #Condition for done and want stop
-                            elif name == 'Done':
+                            elif name == 'DONE':
                                 valid = True
                         #Condition for not found
                         if not valid:
@@ -297,7 +284,7 @@ while not stop:
                     else:
                         print("Duplicate Line.")
                 #Stop if done
-                if name == 'Done':
+                if name == 'DONE':
                     break
             #End manipulate loop
             plt.show(block=False)
@@ -320,8 +307,8 @@ while not stop:
                         #Erase and reset line object
                         remove_lines([linesList[i]])
                         linesList[i], = ax.plot(dataSourceList[i]['datetime'], dataSourceList[i]['temperature'],
-                                                    linestyle='solid', linewidth=1,
-                                                    label=f'{sensName[i]}', color=f'{colorList[i]}')
+                                                linestyle='solid', linewidth=1,
+                                                label=f'{sensName[i]}', color=f'{colorList[i]}')
                         plt.show(block=False)
                         valid = True
                     #Condition for quit
