@@ -23,7 +23,7 @@ import math
 
 #Do we want stuff?
 wantFile = True
-wantAuto = True #!!! ONLY ACCESSIBLE IF wantFile == True !!!#
+wantAuto = False #!!! ONLY ACCESSIBLE IF wantFile == True !!!#
 wantPlot = False #Keep as False but won't break if True
 wantPrint = False #Keep as False but won't break if True
 wantVerify = False #Keep as False but won't break if True
@@ -113,7 +113,7 @@ def AutoGraph(autoDate):
     for i in range(NUM_SENSORS):
         ax.plot(dataSourceList[i]['datetime'], dataSourceList[i]['temperature'],
             linestyle='solid', linewidth=1,
-            label=f'{sensName[i]}', color=f'{colorListH[i]}')
+            label=f'{sensName_to_loc[sensName[i]]}', color=f'{colorListH[i]}')
     ax.xaxis.set_major_locator(mdates.SecondLocator(interval=interval))
     ax.xaxis.set_major_formatter(mdates.DateFormatter('%H:%M:%S'))
 
@@ -124,7 +124,7 @@ def AutoGraph(autoDate):
     plt.xlabel('Time') #x-axis time
     plt.ylabel('Temperature (Celsius)') #y-axis in celcius
     plt.title(title)
-    leg = plt.legend(bbox_to_anchor=(1.01, 1), borderaxespad=0)
+    leg = plt.legend(bbox_to_anchor=(1.01, .5), loc="center left", borderaxespad=0)
     for line in leg.get_lines():
         line.set_linewidth(8.0)
     plt.savefig(f'{FILE_PATH}{autoDate}{pi}.png')
@@ -198,7 +198,7 @@ ads0.data_rate = 860
 ads1 = ADS.ADS1115(i2c, address=0x49)
 ads1.mode = Mode.SINGLE
 ads1.data_rate = 860
-
+'''
 #Prepare each sensor:
 #pi03 setup
 a0 = AnalogIn(ads0, ADS.P0)      #Voltage measurement from I2C48 pin A0
@@ -216,6 +216,7 @@ colorListH=['#6b7c85', '#0165fc', '#bf77f6', '#01ff07',
 #colorList=['xkcd:battleship grey', 'xkcd:bright blue', 'xkcd:light purple', 'xkcd:bright green', 
 #           'xkcd:bright yellow', 'xkcd:bright orange', 'xkcd:red']
 '''
+
 #pi04 setup
 a0 = AnalogIn(ads1, ADS.P3)      #Voltage measurement from I2C49 pin A3
 sens0 = AnalogIn(ads0, ADS.P0)   #Sensor 1 from I2C48 pin A0
@@ -231,7 +232,7 @@ colorListH=['#000000', '#047495', '#7e1e9c', '#15b01a',
            '#f4d054', '#c65102', '#980002'] #Plot colors for pi04 hex
 #colorList=['xkcd:black', 'xkcd:sea blue', 'xkcd:purple', 'xkcd:green', 
 #           'xkcd:maize', 'xkcd:dark orange', 'xkcd:blood red']
-'''
+
 '''
 #pi02 setup
 a0 = AnalogIn(ads1, ADS.P0)      #Voltage measurement from I2C49 pin A0
@@ -249,7 +250,14 @@ colorListH=['#d8dcd6', '#75bbfd', '#eecffe', '#c7fdb5',
 #colorList=['xkcd:light gray', 'xkcd:sky blue', 'xkcd:pale lavender', 'xkcd:pale green', 
 #           'xkcd:light tan', 'xkcd:peach', 'xkcd:neon pink']
 '''
-
+sensName_to_loc =  {'pi02-1': 'T-16-C', 'pi02-2': 'T-40-C', 'pi02-3': 'B-CCM-B', 'pi02-4': 'B-16-L',
+                    'pi02-5': 'R-00-M-02', 'pi02-6': 'T-11-C', 'pi02-7': 'B-14-L',
+                    'pi03-1': 'B-24-L', 'pi03-2': 'T-24-C', 'pi03-3': 'B-23-H', 'pi03-4': 'B-CCM-A',
+                    'pi03-5': 'R-00-M-03', 'pi03-6': 'T-22-C', 'pi03-7': 'B-25-L',
+                    'pi04-1': 'B-42-C', 'pi04-2': 'B-31-C', 'pi04-3': 'B-22-H', 'pi04-4': 'T-46-H',
+                    'pi04-5': 'R-00-M-04', 'pi04-6': 'B-CEN', 'pi04-7': 'T-21-C',
+                    'pi09-0': 'R-00-M-09', 'pi09-1': 'T-41-H', 'pi09-2': 'T-42-H', 'pi09-3': 'T-IN',
+                    'pi09-4': 'T-MID', 'pi09-5': 'T-OUT', 'pi09-6': 'B-RM-3', 'pi09-7': 'T-RM-3'}
 #MAKE ALL THE LISTS !!!
 X = [[] for _ in range(NUM_SENSORS)]
 Y = [[] for _ in range(NUM_SENSORS)]
@@ -288,9 +296,9 @@ plt.xticks(rotation=90)
 plt.xlabel('Time') #x-axis time
 plt.ylabel('Temperature (Celsius)') #y-axis in celcius
 plt.title(title)
-lines = [plt.plot([], [], '-', label=f'{sensName[i]}',
+lines = [plt.plot([], [], '-', label=f'{sensName_to_loc[sensName[i]]}',
                   color=colorListH[i])[0] for i in range(NUM_SENSORS)]
-leg = plt.legend(bbox_to_anchor=(1.01, 1), borderaxespad=0)
+leg = plt.legend(bbox_to_anchor=(1.01, .5), loc="center left", borderaxespad=0)
 for line in leg.get_lines():
     line.set_linewidth(8.0)
 plt.show(block=False)
@@ -419,9 +427,9 @@ while True:
             plt.xlabel('Time') #x-axis time
             plt.ylabel('Temperature (Celsius)') #y-axis in celcius
             plt.title(title)
-            lines = [plt.plot([], [], '-', label=f'{sensName[i]}',
+            lines = [plt.plot([], [], '-', label=f'{sensName_to_loc[sensName[i]]}',
                     color=colorListH[i])[0] for i in range(NUM_SENSORS)]
-            leg = plt.legend(bbox_to_anchor=(1.01, 1), borderaxespad=0)
+            leg = plt.legend(bbox_to_anchor=(1.01, .5), loc="center left", borderaxespad=0)
             for line in leg.get_lines():
                 line.set_linewidth(8.0)
             plt.show(block=False)
