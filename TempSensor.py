@@ -1,7 +1,7 @@
 '''
 AUTHORED: HUNTER JAYDEN TONY
-LAST EDITED: 7/30/2024
-LAST CHANGES: Set invalid y vals to prev y vals
+LAST EDITED: 08/08/2024
+LAST CHANGES: FINAL READY TO PUBLISH
 '''
 
 import adafruit_ads1x15.ads1115 as ADS
@@ -15,15 +15,11 @@ from sshkeyboard import listen_keyboard
 import matplotlib.pyplot as plt
 import matplotlib.dates as mdates
 import numpy as np
-from numpy import fromfile
-from pandas import DataFrame
-import pandas as pd
 import time
 import math
 
 #Do we want stuff?
 wantFile = True
-wantAuto = False #!!! ONLY ACCESSIBLE IF wantFile == True !!!#
 wantPlot = False #Keep as False but won't break if True
 wantPrint = False #Keep as False but won't break if True
 wantVerify = False #Keep as False but won't break if True
@@ -67,68 +63,6 @@ def TempToI2C(temp, live_voltage):
     vT = live_voltage / (1 + rFix/rT) #Voltage thermistor
     z = vT * (MAXBIT_FSVOLT) #I2C integer
     return z
-
-def AutoGraph(autoDate):
-    def read_bin(filename, dtype):
-        return DataFrame(fromfile(filename, dtype))
-
-    dataSourceList = []
-
-    #Load binary file and read:
-    data_read = read_bin(f"{FILE_PATH}{autoDate}{pi}.bin", data_type_bin)
-
-    #Convert data_read to proper format
-    data_read['source'] = data_read['source'].astype(str)
-    data_read['color'] = data_read['color'].astype(str)
-    data_read['datetime'] = data_read['datetime'].astype(str)
-    data_read['datetime'] = pd.to_datetime(data_read['datetime'], format='ISO8601')
-
-    #Collect everything
-    data = data_read
-
-    #Get start time
-    data = data.sort_values(by=['datetime'])
-    dateTimeMin = data['datetime'][0]
-
-    #Set 24hr range and set interval in seconds:
-    xmin = dateTimeMin
-    xmax = "23:59:59.999999"
-    xmax = pd.to_datetime(autoDate + ' ' + xmax, format="%Y-%m-%d %H:%M:%S.%f")
-    timeDiff = (xmax - xmin).total_seconds() #Hours to total seconds
-    interval = int(round(timeDiff / TICKS)) #Evenly space out total seconds for x-axis
-    if interval < 1:
-        interval = 1 #Ensure interval is never zero
-
-    #Condense data to input interval
-    filtered_data = data[(data['datetime'] >= xmin) & (data['datetime'] <= xmax)]
-    
-    #Collect data to list
-    for i in range(NUM_SENSORS):
-        dataSourceList.append(filtered_data[filtered_data['source'] == sensName[i]])
-
-    #Plot:
-    plt.figure(figsize=(16,8))
-    plt.xlim(xmin, xmax)
-    ax = plt.gca()
-    for i in range(NUM_SENSORS):
-        ax.plot(dataSourceList[i]['datetime'], dataSourceList[i]['temperature'],
-            linestyle='solid', linewidth=1,
-            label=f'{sensName_to_loc[sensName[i]]}', color=f'{colorListH[i]}')
-    ax.xaxis.set_major_locator(mdates.SecondLocator(interval=interval))
-    ax.xaxis.set_major_formatter(mdates.DateFormatter('%H:%M:%S'))
-
-    #Plot formatting and save:
-    title = f'Temperature Over Time ({autoDate} {pi})'
-    plt.gcf().autofmt_xdate()
-    plt.xticks(rotation=90)
-    plt.xlabel('Time') #x-axis time
-    plt.ylabel('Temperature (Celsius)') #y-axis in celcius
-    plt.title(title)
-    leg = plt.legend(bbox_to_anchor=(1.01, .5), loc="center left", borderaxespad=0)
-    for line in leg.get_lines():
-        line.set_linewidth(8.0)
-    plt.savefig(f'{FILE_PATH}{autoDate}{pi}.png')
-    plt.close()
 
 def press_g():
     #Live graph hotkey
@@ -216,7 +150,6 @@ colorListH=['#6b7c85', '#0165fc', '#bf77f6', '#01ff07',
 #colorList=['xkcd:battleship grey', 'xkcd:bright blue', 'xkcd:light purple', 'xkcd:bright green', 
 #           'xkcd:bright yellow', 'xkcd:bright orange', 'xkcd:red']
 '''
-
 #pi04 setup
 a0 = AnalogIn(ads1, ADS.P3)      #Voltage measurement from I2C49 pin A3
 sens0 = AnalogIn(ads0, ADS.P0)   #Sensor 1 from I2C48 pin A0
@@ -232,7 +165,6 @@ colorListH=['#000000', '#047495', '#7e1e9c', '#15b01a',
            '#f4d054', '#c65102', '#980002'] #Plot colors for pi04 hex
 #colorList=['xkcd:black', 'xkcd:sea blue', 'xkcd:purple', 'xkcd:green', 
 #           'xkcd:maize', 'xkcd:dark orange', 'xkcd:blood red']
-
 '''
 #pi02 setup
 a0 = AnalogIn(ads1, ADS.P0)      #Voltage measurement from I2C49 pin A0
@@ -250,6 +182,7 @@ colorListH=['#d8dcd6', '#75bbfd', '#eecffe', '#c7fdb5',
 #colorList=['xkcd:light gray', 'xkcd:sky blue', 'xkcd:pale lavender', 'xkcd:pale green', 
 #           'xkcd:light tan', 'xkcd:peach', 'xkcd:neon pink']
 '''
+#Dictionary for sensor names
 sensName_to_loc =  {'pi02-1': 'T-16-C', 'pi02-2': 'T-40-C', 'pi02-3': 'B-CCM-B', 'pi02-4': 'B-16-L',
                     'pi02-5': 'R-00-M-02', 'pi02-6': 'T-11-C', 'pi02-7': 'B-14-L',
                     'pi03-1': 'B-24-L', 'pi03-2': 'T-24-C', 'pi03-3': 'B-23-H', 'pi03-4': 'B-CCM-A',
@@ -313,24 +246,10 @@ while True:
         #Update title
         new_day = datetime.date.today()
         title = f'Temperature Over Time ({new_day} {pi})'
-
-        if wantFile:
-            #Autograph call:
-            fileBin.close()
-            if wantAuto:
-                AutoGraph(DATE_TODAY)
-
-            #Update date
-            DATE_TODAY = new_day
-
-            #Open new text and binary files:
-            with open(f"{FILE_PATH}{DATE_TODAY}{pi}.txt", 'a') as fileText:
-                fileText.write(header)
-                fileText.flush()
-            fileBin = open(f"{FILE_PATH}{DATE_TODAY}{pi}.bin", 'ab')
-        else:
-            #Update date
-            DATE_TODAY = new_day
+        #Update date
+        DATE_TODAY = new_day
+    
+    #Corrupt prevention
     fileBin.flush()
     
     for i in range(NUM_SENSORS):
@@ -338,16 +257,6 @@ while True:
         rFix = rFixList[i]
 
         #Acquire sensor temperature and verify
-        #debug#
-        try:
-            vltg = a0.voltage
-        except Exception as e:
-            print(e, "vltg error", datetime.datetime.now())
-        try:
-            sensVal = sensList[i].value
-        except Exception as e:
-            print(e, "sens error", datetime.datetime.now())
-        #debug#
         try:
             timeNow = datetime.datetime.now()
             y = I2CToTemp(sensList[i].value, a0.voltage*2)
@@ -356,7 +265,7 @@ while True:
                 y = prevYList[i]
         except Exception as e:
             y = prevYList[i]
-            print(e, "orig error", timeNow)
+            print(e, "I2C ERROR", timeNow)
         
         if wantVerify: 
             verify = TempToI2C(y, live_voltage)
@@ -386,10 +295,12 @@ while True:
                 with open(f"{FILE_PATH}{DATE_TODAY}{pi}.txt", 'a') as fileText:
                     #Create content
                     content = f"{timeNow}   "
+                    
                     for i in range(NUM_SENSORS):
                         temp = "%.2f" % round(currentYList[i],2)
                         content += f'{temp}   '
                     content += '\n'
+                    
                     #Write content
                     fileText.write(content)
                     fileText.flush()
@@ -397,9 +308,11 @@ while True:
         if wantPrint:
             #Create content
             content = ""
+            
             for i in range(NUM_SENSORS):
                 temp = "%.2f" % round(currentYList[i],2)
                 content += f'{temp}   '
+            
             #Write content and reset list
             print(content)
 
@@ -409,6 +322,7 @@ while True:
                 X[i].append(currentXList[i])
                 Y[i].append(currentYList[i])
                 lines[i].set_data(X[i], Y[i])
+            
             #Plot sensor point and pause
             plt.pause(PLOT_PAUSE)
             ax.relim()
@@ -432,8 +346,7 @@ while True:
             leg = plt.legend(bbox_to_anchor=(1.01, .5), loc="center left", borderaxespad=0)
             for line in leg.get_lines():
                 line.set_linewidth(8.0)
-            plt.show(block=False)
-
+            plt.show(block=False)         
     #Clear lists:
     prevYList = currentYList
     dataPointList = []
