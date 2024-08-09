@@ -403,8 +403,8 @@ if fileCountBin != 0:
 ##Plotting##
 #Set title
 intervalsList = sorted(intervalsList)
-if dateMin == dateMax:
-    title = f'Temperature Over Time ({dateMin})'
+if intervalsList[0][0].strftime("%Y-%m-%d") == intervalsList[-1][1].strftime("%Y-%m-%d"):
+    title = f'Temperature Over Time ({intervalsList[0][0].strftime("%Y-%m-%d")})'
 else:
     title = f'Temperature Over Time ({intervalsList[0][0].strftime("%Y-%m-%d")} to {intervalsList[-1][1].strftime("%Y-%m-%d")})'
 #Set plot parameters
@@ -475,7 +475,10 @@ axs[int(len(intervalsList)/2)].set_xlabel('Time', fontsize=14) #x-axis time
 axs[0].set_ylabel('Temperature (Celsius)', fontsize=14) #y-axis in celcius
 f.suptitle(title, fontsize=24)
 try:
-    leg = axs[-1].legend(bbox_to_anchor=(1.05, .5), loc="center left", borderaxespad=0)
+    if len(intervalsList) >= 4:
+        leg = axs[-1].legend(bbox_to_anchor=(1.05, .5), loc="center left", borderaxespad=0)
+    else:
+        leg = axs[-1].legend(bbox_to_anchor=(1.02, .5), loc="center left", borderaxespad=0)
     for line in leg.get_lines():
         line.set_linewidth(8.0)
 except:

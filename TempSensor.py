@@ -246,8 +246,19 @@ while True:
         #Update title
         new_day = datetime.date.today()
         title = f'Temperature Over Time ({new_day} {pi})'
-        #Update date
-        DATE_TODAY = new_day
+        if wantFile:
+            #Autograph call:
+            fileBin.close()
+            #Update date
+            DATE_TODAY = new_day
+
+            #Open new text and binary files:
+            with open(f"{FILE_PATH}{DATE_TODAY}{pi}.txt", 'a') as fileText:
+                fileText.write(header)
+            fileBin = open(f"{FILE_PATH}{DATE_TODAY}{pi}.bin", 'ab')
+        else:
+            #Update date
+            DATE_TODAY = new_day
     
     #Corrupt prevention
     fileBin.flush()
