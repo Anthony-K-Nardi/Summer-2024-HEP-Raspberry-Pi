@@ -9,6 +9,8 @@ import matplotlib.dates as mdates
 import numpy as np
 from pandas import DataFrame
 import pandas as pd
+import datetime
+from OldTesting import clear_m
 
 def read_bin(filename, dt):
     return DataFrame(np.fromfile(filename, dtype=dt))
@@ -266,7 +268,12 @@ for z in sensName:
 #Check to make sure data is one for one
 if numSen != len(colorList):
     print("ERROR: Sensor number and color number not equal!")
-    exit()
+    quit()
+
+#Check if excelData is empty
+if fileCountExcel != 0 and excelData.empty:
+    print("ERROR: No data from interval file, program will be stopped.")
+    quit()
 
 ##Get intervals##
 if excel == False:
@@ -374,21 +381,28 @@ else:
         if pd.isnull(minMaxList[0][i]):
             continue
         
-        #Slashes to dashes in datetime
-        if excelData.iloc[i, 0].find('/') != -1 or excelData.iloc[i, 1].find('/') != -1:
-            excelData.iloc[i, 0] = excelData.iloc[i, 0].replace('/', '-')
-            excelData.iloc[i, 1] = excelData.iloc[i, 1].replace('/', '-')
-        
-        #Add in decimal if not included in min
-        if not "." in excelData.iloc[i, 0]:
-            excelData.iloc[i, 0] += ".0"
-        
-        #Add in decimal if not included in max
-        if not "." in excelData.iloc[i, 1]:
-            excelData.iloc[i, 1] += ".0"    
-        
-        #Check to see if interval has correct bounds and append
-        interval = retint(excelData.iloc[i, 0], excelData.iloc[i, 1])
+        if isinstance(excelData.iloc[i, 0], datetime.datetime) and isinstance(excelData.iloc[i, 1], datetime.datetime):
+            interval = [excelData.iloc[i, 0], excelData.iloc[i, 1]]
+        elif isinstance(excelData.iloc[i, 0], str) and isinstance(excelData.iloc[i, 1], str):
+            #Slashes to dashes in datetime
+            if excelData.iloc[i, 0].find('/') != -1 or excelData.iloc[i, 1].find('/') != -1:
+                excelData.iloc[i, 0] = excelData.iloc[i, 0].replace('/', '-')
+                excelData.iloc[i, 1] = excelData.iloc[i, 1].replace('/', '-')
+            
+            #Add in decimal if not included in min
+            if not "." in excelData.iloc[i, 0]:
+                excelData.iloc[i, 0] += ".0"
+            
+            #Add in decimal if not included in max
+            if not "." in excelData.iloc[i, 1]:
+                excelData.iloc[i, 1] += ".0"    
+            
+            #Check to see if interval has correct bounds and append
+            interval = retint(excelData.iloc[i, 0], excelData.iloc[i, 1])
+        else:
+            print("ERROR: Interval file is in the wrong format, program will be stopped.")
+            quit()
+
         if interval[1] > interval[0]:
             intervalsList.append(interval)
         else:
@@ -512,7 +526,8 @@ while not stop:
                     #Take name and check for repeat
                     name = input(f"Line {i+1}: ")
                     repeat = name in usedNames
-
+                    if name == '':
+                        clear_m()
                     if not repeat:
                         #Search for name
                         for j in range(numSen):
