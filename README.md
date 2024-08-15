@@ -5,3 +5,5 @@ The programs that should be used are:
   TrimData.py
   OldTesting.py (it is used in TempPlot as an import)
   NoZero.py  
+
+Please see the user guide for more information.
