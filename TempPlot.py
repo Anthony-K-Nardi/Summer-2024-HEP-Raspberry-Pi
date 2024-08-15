@@ -1,7 +1,7 @@
 '''
 AUTHORED: HUNTER JAYDEN TONY
-LAST EDITED: 08/08/2024
-LAST CHANGES: FINAL READY TO PUBLISH
+LAST EDITED: 08/14/2024
+LAST CHANGES: Added additional data type for trimmed data
 '''
 
 import matplotlib.pyplot as plt
@@ -10,10 +10,23 @@ import numpy as np
 from pandas import DataFrame
 import pandas as pd
 import datetime
-from OldTesting import clear_m
+#make sure program doesn't break if OldTesting.py is not downloaded and in the same location as TempPlot.py
+#Program can run without this import, it will be missing a feature
+try:
+    from OldTesting import clear_m
+except:
+    dummy = 0
 
 def read_bin(filename, dt):
-    return DataFrame(np.fromfile(filename, dtype=dt))
+    try:
+        df = DataFrame(np.fromfile(filename, dtype=dt))
+        dummy = df['source'].astype(str)
+    except:
+        df = DataFrame(np.fromfile(filename, dtype=DATA_TYPE_BIN_OTHER))
+    return df
+
+def read_dat(filename, dt):
+    return(DataFrame(np.fromfile(filename, dtype=dt)))
 
 def clear_data(ax):
     for artist in ax.lines + ax.collections:
@@ -65,6 +78,7 @@ def retint(min, max):
 
 FILE_PATH = "/home/shib/Desktop/piData/"
 DATA_TYPE_BIN = [('source', 'S6'), ('datetime', 'S26'), ('temperature', 'f8'), ('color', 'S8')]
+DATA_TYPE_BIN_OTHER = [('source', 'S6'), ('datetime', '<M8[ns]'), ('temperature', '<f8'), ('color', 'S8')]
 
 excel = False
 valid = False
@@ -95,12 +109,12 @@ pi09colorList = ['#6e750e', '#c20078', "#653700", '#88b378', '#7ef4cc', '#d46a7e
 
 #Dictionary for sensor names
 sensName_to_loc = {'pi02-1': 'T-16-C', 'pi02-2': 'T-40-C', 'pi02-3': 'B-CCM-B', 'pi02-4': 'B-16-L',
-                   'pi02-5': 'R-00-M-02', 'pi02-6': 'T-11-C', 'pi02-7': 'B-14-L',
+                   'pi02-5': 'ROOM-02', 'pi02-6': 'T-11-C', 'pi02-7': 'B-14-L',
                    'pi03-1': 'B-24-L', 'pi03-2': 'T-24-C', 'pi03-3': 'B-23-H', 'pi03-4': 'B-CCM-A',
-                   'pi03-5': 'R-00-M-03', 'pi03-6': 'T-22-C', 'pi03-7': 'B-25-L',
+                   'pi03-5': 'ROOM-03', 'pi03-6': 'T-22-C', 'pi03-7': 'B-25-L',
                    'pi04-1': 'B-42-C', 'pi04-2': 'B-31-C', 'pi04-3': 'B-22-H', 'pi04-4': 'T-46-H',
-                   'pi04-5': 'R-00-M-04', 'pi04-6': 'B-CEN', 'pi04-7': 'T-21-C',
-                   'pi09-0': 'R-00-M-09', 'pi09-1': 'T-41-H', 'pi09-2': 'T-42-H', 'pi09-3': 'T-IN',
+                   'pi04-5': 'ROOM-04', 'pi04-6': 'B-CEN', 'pi04-7': 'T-21-C',
+                   'pi09-0': 'ROOM-09', 'pi09-1': 'T-41-H', 'pi09-2': 'T-42-H', 'pi09-3': 'T-IN',
                    'pi09-4': 'T-MID', 'pi09-5': 'T-OUT', 'pi09-6': 'B-RM-3', 'pi09-7': 'T-RM-3'}
 
 print("\n***TempPlot program by Hunter Buttrum, Jayden Blanchard, and Tony Nardi.***")
@@ -171,7 +185,7 @@ while not done:
                 #Check if pi09 file
                 elif file[-4:] == ".dat":
                     data_type = pi09
-                    data_read = read_bin(f"{FILE_PATH}{file}", data_type)
+                    data_read = read_dat(f"{FILE_PATH}{file}", data_type)
                     
                     #Collect first file data
                     if fileCountDat == 0:
@@ -189,7 +203,7 @@ while not done:
                     
                     #Collect first file data
                     if fileCountExcel == 0:
-                        excelData = pd.read_excel(f"{FILE_PATH}{file}")
+                        excelData = pd.read_excel(f"{FILE_PATH}{file}", usecols=[0,1,2], names=['Start Time', 'End Time', 'SiPM Temp'])
                     
                     #Collect subsequent file data
                     else:
@@ -204,7 +218,7 @@ while not done:
 
                     #Collect first file data
                     if fileCountExcel == 0:
-                        excelData = pd.read_csv(f"{FILE_PATH}{file}")
+                        excelData = pd.read_csv(f"{FILE_PATH}{file}", usecols=[0,1,2], names=['Start Time', 'End Time', 'SiPM Temp'], skiprows=1)
                     
                     #Collect subsequent file data
                     else:
@@ -269,7 +283,11 @@ for z in sensName:
 if numSen != len(colorList):
     print("ERROR: Sensor number and color number not equal!")
     quit()
-
+'''
+#Get rid of any temps = 0 from old data that stored errors as 0
+zero_to_None ={0 : None}
+data.replace({'temperature': zero_to_None}, inplace=True)
+'''
 #Check if excelData is empty
 if fileCountExcel != 0 and excelData.empty:
     print("ERROR: No data from interval file, program will be stopped.")
@@ -416,13 +434,19 @@ if fileCountBin != 0:
 
 ##Plotting##
 #Set title
-intervalsList = sorted(intervalsList)
-if intervalsList[0][0].strftime("%Y-%m-%d") == intervalsList[-1][1].strftime("%Y-%m-%d"):
-    title = f'Temperature Over Time ({intervalsList[0][0].strftime("%Y-%m-%d")})'
+intervalsListSorted = sorted(intervalsList)
+if len(intervalsList) >= 2:
+    sortyn = input("Do you want your intervals sorted by time? y/n: ")
+    if sortyn == "y":
+        intervalsList = sorted(intervalsList)
+        if fileCountExcel != 0:
+            excelData = excelData.sort_values(by=['Start Time'])
+if intervalsListSorted[0][0].strftime("%Y-%m-%d") == intervalsListSorted[-1][1].strftime("%Y-%m-%d"):
+    title = f'Temperature Over Time ({intervalsListSorted[0][0].strftime("%Y-%m-%d")})'
 else:
-    title = f'Temperature Over Time ({intervalsList[0][0].strftime("%Y-%m-%d")} to {intervalsList[-1][1].strftime("%Y-%m-%d")})'
+    title = f'Temperature Over Time ({intervalsListSorted[0][0].strftime("%Y-%m-%d")} to {intervalsListSorted[-1][1].strftime("%Y-%m-%d")})'
 #Set plot parameters
-f, axs = plt.subplots(1, len(intervalsList), figsize=(18,10), sharey='all')
+f, axs = plt.subplots(1, len(intervalsList), figsize=(18,10), sharey='all', gridspec_kw=dict(wspace=0))
 if len(intervalsList) == 1:
     axs = [axs]
 #Calculate interval of x-axis for TICKS steps
@@ -467,26 +491,40 @@ for j in range(len(intervalsList)):
                     linestyle='solid', linewidth=1,
                     label=f'{sensName_to_loc[sensName[i]]}', color=f'{colorList[i]}')
             linesList[i + numSen * j] = line
+
 #Formatting for each interval
+axs[0].set_ylabel('Temperature (Celsius)', fontsize=14) #y-axis in celcius
 for j in range(len(intervalsList)):
     axs[j].xaxis.set_major_formatter(mdates.DateFormatter('%H:%M:%S'))
     axs[j].set_xlim(intervalsList[j])
-    axs[j].tick_params('x', labelrotation=90)
+    axs[j].tick_params('x', labelrotation=90, pad=0.1, labelsize=9, )
     axs[j].grid(True)
-    axs[j].xaxis.set_major_locator(mdates.SecondLocator(interval=xticksList[j]))
-    axs[j].xaxis.set_major_formatter(mdates.DateFormatter('%H:%M:%S'))
+    axs[j].set_ymargin(0.015)
+    
+    if intervalsListSorted[0][0].strftime("%Y-%m-%d") == intervalsListSorted[-1][1].strftime("%Y-%m-%d"):
+        axs[j].xaxis.set_major_locator(mdates.SecondLocator(interval=xticksList[j]))
+        axs[j].xaxis.set_major_formatter(mdates.DateFormatter('%H:%M:%S'))
+
+    else:
+        axs[j].xaxis.set_major_locator(mdates.SecondLocator(interval=xticksList[j]))
+        axs[j].xaxis.set_major_formatter(mdates.DateFormatter('%m-%d %H:%M'))
+    plt.setp(axs[j].get_xticklabels()[:], ha='left')
+    if j != len(intervalsList) - 1:
+        axs[j].spines['right'].set_linewidth(3)
+    if len(intervalsList) > 1:
+        plt.setp(axs[j].get_xticklabels()[-1], visible=False)
+    if len(intervalsList) > 8:
+        plt.setp(axs[j].get_xticklabels()[1], visible=False)
     
     #Pluck SiPM temp for subplot title
     if excel:
-        axs[j].set_title(f'{(excelData.iloc[j, 2])} C', fontsize=6)
+        if len(f'{excelData.iloc[j, 2]}') < 5:
+            axs[j].set_title(f'{(excelData.iloc[j, 2])} C', fontsize=6)
+        else:
+            axs[j].set_title(f'{(excelData.iloc[j, 2])} C', fontsize=6, rotation=30, ha='left')
 
-    #Polish subplot transitions
-    if j != len(intervalsList) - 1:
-        axs[j].spines['right'].set_linewidth(3)
-        plt.setp(axs[j].get_xticklabels()[-1], visible=False)
 #Set plot titles and labels
 axs[int(len(intervalsList)/2)].set_xlabel('Time', fontsize=14) #x-axis time
-axs[0].set_ylabel('Temperature (Celsius)', fontsize=14) #y-axis in celcius
 f.suptitle(title, fontsize=24)
 try:
     if len(intervalsList) >= 4:
@@ -495,9 +533,11 @@ try:
         leg = axs[-1].legend(bbox_to_anchor=(1.02, .5), loc="center left", borderaxespad=0)
     for line in leg.get_lines():
         line.set_linewidth(8.0)
-except:
+except Exception as e:
+    print(e)
     print("No legend for you!")
-plt.subplots_adjust(wspace=0)
+#plt.subplots_adjust(wspace=0)
+plt.tight_layout()
 plt.show(block=False)
 
 ##Warning##
@@ -527,7 +567,10 @@ while not stop:
                     name = input(f"Line {i+1}: ")
                     repeat = name in usedNames
                     if name == '':
-                        clear_m()
+                        try:
+                            clear_m()
+                        except:
+                            dummy = 0
                     if not repeat:
                         #Search for name
                         for j in range(numSen):

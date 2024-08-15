@@ -68,5 +68,5 @@ y_3 = y[(x >= intervals[2][0]) & (x <= intervals[2][-1])]
 
 def clear_m():
     import webbrowser as wb
-    wb.open('https://www.youtube.com/watch?v=Aq5WXmQQooo')
+    wb.open('https://www.youtube.com/watch?v=oPLObjVAvIU')
     print("You've been rolled! LMAO XD GG")
