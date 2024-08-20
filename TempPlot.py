@@ -11,7 +11,7 @@ from pandas import DataFrame
 import pandas as pd
 import datetime
 #make sure program doesn't break if OldTesting.py is not downloaded and in the same location as TempPlot.py
-#Program can run without this import, it will be missing a feature
+#Program can run without this import, but it will be missing a feature
 try:
     from OldTesting import clear_m
 except:
@@ -88,7 +88,9 @@ data_type = None
 colorList = []
 dataSourceList = []
 fileList = []
+handlesList = []
 intervalsList = []
+labelsList = []
 locList = []
 sensName = []
 xticksList = []
@@ -108,18 +110,18 @@ pi09colorList = ['#6e750e', '#c20078', "#653700", '#88b378', '#7ef4cc', '#d46a7e
 #                     "xkcd:light turquoise", "xkcd:pinkish", "xkcd:dark biege", "xkcd:pinkish tan"]
 
 #Dictionary for sensor names
-sensName_to_loc = {'pi02-1': 'T-16-C', 'pi02-2': 'T-40-C', 'pi02-3': 'B-CCM-B', 'pi02-4': 'B-16-L',
+sensName_to_loc = {'pi02-1': 'T-16-L', 'pi02-2': 'T-40-C', 'pi02-3': 'B-CCM-B', 'pi02-4': 'B-16-L',
                    'pi02-5': 'ROOM-02', 'pi02-6': 'T-11-C', 'pi02-7': 'B-14-L',
                    'pi03-1': 'B-24-L', 'pi03-2': 'T-24-C', 'pi03-3': 'B-23-H', 'pi03-4': 'B-CCM-A',
                    'pi03-5': 'ROOM-03', 'pi03-6': 'T-22-C', 'pi03-7': 'B-25-L',
                    'pi04-1': 'B-42-C', 'pi04-2': 'B-31-C', 'pi04-3': 'B-22-H', 'pi04-4': 'T-46-H',
                    'pi04-5': 'ROOM-04', 'pi04-6': 'B-CEN', 'pi04-7': 'T-21-C',
                    'pi09-0': 'ROOM-09', 'pi09-1': 'T-41-H', 'pi09-2': 'T-42-H', 'pi09-3': 'T-IN',
-                   'pi09-4': 'T-MID', 'pi09-5': 'T-OUT', 'pi09-6': 'B-RM-3', 'pi09-7': 'T-RM-3'}
+                   'pi09-4': 'T-MID', 'pi09-5': 'T-OUT', 'pi09-6': 'B-RM3', 'pi09-7': 'T-RM3'}
 
 print("\n***TempPlot program by Hunter Buttrum, Jayden Blanchard, and Tony Nardi.***")
 print("Designed to plot binary data collected from thermistors and edit afterwards if needed.")
-print("See documentation for full capabilities, expected file formats, or other error handling.\n")
+print("See UserGuideTemp.txt for full capabilities, expected file formats, or other error handling.\n")
 print("Accepted binary file types: '.bin' or '.dat'.")
 print("Accepted interval file types: '.xlsx', '.xlsm', '.xltx', '.xltm', or '.csv'.")
 
@@ -454,6 +456,9 @@ for i in range(len(intervalsList)):
     #Ticks for one plot
     if len(intervalsList) == 1:
         numticks = 15
+    #Ticks for too many plots
+    elif len(intervalsList) > 54:
+        numticks = 1
     #Ticks for many plots
     elif len(intervalsList) > 8:
         numticks = 2
@@ -491,6 +496,9 @@ for j in range(len(intervalsList)):
                     linestyle='solid', linewidth=1,
                     label=f'{sensName_to_loc[sensName[i]]}', color=f'{colorList[i]}')
             linesList[i + numSen * j] = line
+        if j == len(intervalsList) - 1:
+            labelsList.append(f'{sensName_to_loc[sensName[i]]}')
+            handlesList.append(line)
 
 #Formatting for each interval
 axs[0].set_ylabel('Temperature (Celsius)', fontsize=14) #y-axis in celcius
@@ -528,9 +536,9 @@ axs[int(len(intervalsList)/2)].set_xlabel('Time', fontsize=14) #x-axis time
 f.suptitle(title, fontsize=24)
 try:
     if len(intervalsList) >= 4:
-        leg = axs[-1].legend(bbox_to_anchor=(1.05, .5), loc="center left", borderaxespad=0)
+        leg = axs[-1].legend(handlesList, labelsList, bbox_to_anchor=(1.05, .5), loc="center left", borderaxespad=0)
     else:
-        leg = axs[-1].legend(bbox_to_anchor=(1.02, .5), loc="center left", borderaxespad=0)
+        leg = axs[-1].legend(handlesList, labelsList, bbox_to_anchor=(1.02, .5), loc="center left", borderaxespad=0)
     for line in leg.get_lines():
         line.set_linewidth(8.0)
 except Exception as e:
@@ -557,7 +565,14 @@ while not stop:
             for ax in axs:
                 clear_data(ax)
             usedNames = []
-
+            handlesList = []
+            labelsList = []
+            #axs[-1].get_legend().set_visible(False)
+            seeLegend = False
+            try:
+                axs[-1].get_legend().remove()
+            except:
+                dummy = 0
             #Start manipulate loop
             for i in range(numSen):
                 valid = False
@@ -595,8 +610,21 @@ while not stop:
                                             linesList[lineNum], =axs[k].plot(filtered_data['datetime'], filtered_data['temperature'],
                                                                     linestyle='solid', linewidth=1,
                                                                     label=f'{sensName_to_loc[sensName[j]]}', color=f'{colorList[j]}')
+                                        if k == len(intervalsList) - 1:
+                                            legLabel = f'{sensName_to_loc[sensName[j]]}'
+                                            legHandle = linesList[lineNum]
+                                            for n in range(len(labelsList)):
+                                                if legLabel == labelsList[n]:
+                                                    labelsList.remove(labelsList[n])
+                                                    handlesList.remove(handlesList[n])
+                                                    break
+                                            labelsList.append(legLabel)
+                                            handlesList.append(legHandle)
                                     except Exception as e:
                                         print(e)
+                                
+                                seeLegend = True
+
                                 #Append found name to mark as used
                                 usedNames.append(sensName[j])
                                 usedNames.append(sensName_to_loc[sensName[j]])
@@ -629,6 +657,17 @@ while not stop:
                                             linesList[lineNum], =axs[k].plot(filtered_data['datetime'], filtered_data['temperature'],
                                                                     linestyle='solid', linewidth=1,
                                                                     label=f'{sensName_to_loc[sensName[n]]}', color=f'{colorList[n]}')
+                                        if k == len(intervalsList) - 1:
+                                            legLabel = f'{sensName_to_loc[sensName[n]]}'
+                                            legHandle = linesList[lineNum]
+                                            for m in range(len(labelsList)):
+                                                if legLabel == labelsList[m]:
+                                                    labelsList.remove(labelsList[m])
+                                                    handlesList.remove(handlesList[m])
+                                                    break
+                                            labelsList.append(legLabel)
+                                            handlesList.append(legHandle)
+                                seeLegend = True
                                 name = 'DONE'
                                 valid = True
                         #Condition for not found
@@ -640,6 +679,22 @@ while not stop:
                 if name == 'DONE':
                     break
             #End manipulate loop
+            if seeLegend:
+                try:
+                    if len(intervalsList) >= 4:
+                        leg = axs[-1].legend(handlesList, labelsList, bbox_to_anchor=(1.05, .5), loc="center left", borderaxespad=0)
+                    else:
+                        leg = axs[-1].legend(handlesList, labelsList, bbox_to_anchor=(1.02, .5), loc="center left", borderaxespad=0)
+                    for line in leg.get_lines():
+                        line.set_linewidth(8.0)
+                        '''
+                    ax.relim()
+                    ax.autoscale_view()
+                        '''
+                except Exception as e:
+                    print(e)
+                    print("No legend for you!")
+            
             plt.show(block=False)
         
         ##Bring to front##
@@ -707,7 +762,7 @@ while not stop:
                                         linesList[lineNum], = axs[k].plot(filtered_data['time'], filtered_data[f'T{i-senNot09}'],
                                                 linestyle='solid', linewidth=1,
                                                 label=f'{sensName_to_loc[sensName[i]]}', color=f'{colorList[i]}')
-                                        plt.show(block=False)
+                                        #plt.show(block=False)
 
                                     #If other sensor
                                     else:
@@ -715,10 +770,41 @@ while not stop:
                                         linesList[lineNum], =axs[k].plot(filtered_data['datetime'], filtered_data['temperature'],
                                                                 linestyle='solid', linewidth=1,
                                                                 label=f'{sensName_to_loc[sensName[i]]}', color=f'{colorList[i]}')
-                                        plt.show(block=False)
+                                        
+                                        
+                                    if k == len(intervalsList) - 1:
+                                        legLabel = f'{sensName_to_loc[sensName[i]]}'
+                                        legHandle = linesList[lineNum]
+                                        for n in range(len(labelsList)):
+                                            if legLabel == labelsList[n]:
+                                                labelsList.remove(labelsList[n])
+                                                handlesList.remove(handlesList[n])
+                                                break
+                                        labelsList.append(legLabel)
+                                        handlesList.append(legHandle)
+                                        
+                                        try:
+                                            if len(intervalsList) >= 4:
+                                                leg = axs[-1].legend(handlesList, labelsList, bbox_to_anchor=(1.05, .5), loc="center left", borderaxespad=0)
+                                            else:
+                                                leg = axs[-1].legend(handlesList, labelsList, bbox_to_anchor=(1.02, .5), loc="center left", borderaxespad=0)
+                                            for line in leg.get_lines():
+                                                line.set_linewidth(8.0)
+                                                
+                                        except Exception as e:
+                                            print(e)
+                                            print("No legend for you!")
+                                    '''
+                                    axs[-1].relim()
+                                    axs[-1].autoscale_view()
+                                    
+                                    for ax in axs:
+                                        ax.set_ymargin(0.015)
+                                        '''
+                                    #plt.show(block=False)
                                 except Exception as e:
                                     print(e)
-                        
+                            plt.show(block=False)
                         #Use specified interval
                         elif name != 'q':
                             lineNum = i + numSen * intervalNum
@@ -739,7 +825,9 @@ while not stop:
                                     linesList[lineNum], = axs[intervalNum].plot(filtered_data['time'], filtered_data[f'T{i-senNot09}'],
                                             linestyle='solid', linewidth=1,
                                             label=f'{sensName_to_loc[sensName[i]]}', color=f'{colorList[i]}')
-                                    plt.show(block=False)
+                                    legLabel = f'{sensName_to_loc[sensName[i]]}'
+                                    legHandle = linesList[lineNum]
+                                    
 
                                 #If other sensor
                                 else:
@@ -747,7 +835,35 @@ while not stop:
                                     linesList[lineNum], =axs[intervalNum].plot(filtered_data['datetime'], filtered_data['temperature'],
                                                             linestyle='solid', linewidth=1,
                                                             label=f'{sensName_to_loc[sensName[i]]}', color=f'{colorList[i]}')
-                                    plt.show(block=False)
+                                    legLabel = f'{sensName_to_loc[sensName[i]]}'
+                                    legHandle = linesList[lineNum]
+                                    
+                                for n in range(len(labelsList)):
+                                    if legLabel == labelsList[n]:
+                                        labelsList.remove(labelsList[n])
+                                        handlesList.remove(handlesList[n])
+                                        break
+                                labelsList.append(legLabel)
+                                handlesList.append(legHandle)
+                                
+                                try:
+                                    if len(intervalsList) >= 4:
+                                        leg = axs[-1].legend(handlesList, labelsList, bbox_to_anchor=(1.05, .5), loc="center left", borderaxespad=0)
+                                    else:
+                                        leg = axs[-1].legend(handlesList, labelsList, bbox_to_anchor=(1.02, .5), loc="center left", borderaxespad=0)
+                                    for line in leg.get_lines():
+                                        line.set_linewidth(8.0)
+                                        
+                                except Exception as e:
+                                    print(e)
+                                    print("No legend for you!")
+                                    '''
+                                #works but slow
+                                for ax in axs:
+                                    ax.relim()
+                                    ax.autoscale_view()
+                                '''
+                                plt.show(block=False)
                             except Exception as e:
                                 print(e)
                         valid = True
